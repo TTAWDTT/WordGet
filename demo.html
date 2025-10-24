@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordGet Demo - Test Page</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.8;
+            color: #333;
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        
+        .section h2 {
+            color: #764ba2;
+            margin-top: 0;
+        }
+        
+        .highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        .example {
+            font-style: italic;
+            border-left: 3px solid #667eea;
+            padding-left: 15px;
+            margin: 15px 0;
+        }
+        
+        .instructions {
+            background: #fff;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .instructions h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        
+        kbd {
+            background: #f4f4f4;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .word-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .word-badge {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to WordGet Demo Page</h1>
+    <p class="subtitle">Test your vocabulary notebook extension here</p>
+    
+    <div class="instructions">
+        <h3>📚 How to Use WordGet</h3>
+        <ol>
+            <li>Select any word or phrase on this page</li>
+            <li>Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>W</kbd> (Mac: <kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>W</kbd>)</li>
+            <li>Or right-click and select "保存到 WordGet"</li>
+            <li>The word will be saved and the sidebar will open with translation</li>
+        </ol>
+    </div>
+
+    <div class="section">
+        <h2>Sample Text for Testing</h2>
+        <p>
+            This is a <strong>comprehensive</strong> test page for the WordGet browser extension. 
+            The extension allows you to save and learn <strong>vocabulary</strong> efficiently while 
+            reading web content. Try selecting words like <span class="highlight">sophisticated</span>, 
+            <span class="highlight">implement</span>, or <span class="highlight">architecture</span>.
+        </p>
+        
+        <div class="example">
+            "The implementation of this feature requires a sophisticated understanding of modern 
+            web development architecture and best practices."
+        </div>
+        
+        <p>
+            When you select a word, WordGet will automatically <strong>capture</strong> the surrounding 
+            sentence as an example, which helps you remember the <strong>context</strong> in which the 
+            word was used. This is particularly useful for understanding the <strong>nuances</strong> 
+            and proper usage of new vocabulary.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>Advanced Vocabulary Words</h2>
+        <div class="word-list">
+            <div class="word-badge">algorithm</div>
+            <div class="word-badge">paradigm</div>
+            <div class="word-badge">optimize</div>
+            <div class="word-badge">integrate</div>
+            <div class="word-badge">scalable</div>
+            <div class="word-badge">responsive</div>
+            <div class="word-badge">asynchronous</div>
+            <div class="word-badge">persistent</div>
+            <div class="word-badge">efficient</div>
+            <div class="word-badge">architecture</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Technical Terms in Context</h2>
+        <p>
+            Modern web applications utilize various <strong>frameworks</strong> and <strong>libraries</strong> 
+            to enhance development <strong>efficiency</strong>. The <strong>architecture</strong> of these 
+            systems often involves <strong>modular</strong> components that can be easily maintained and scaled.
+        </p>
+        
+        <div class="example">
+            "A well-designed API facilitates seamless integration between different components 
+            of the application, ensuring robust performance across various platforms."
+        </div>
+        
+        <p>
+            Browser extensions leverage powerful APIs to provide enhanced functionality. The 
+            <strong>manifest</strong> file defines the extension's <strong>permissions</strong> and 
+            capabilities, while <strong>background scripts</strong> handle persistent operations.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>Academic English Examples</h2>
+        <p>
+            The <strong>methodology</strong> employed in this research demonstrates a 
+            <strong>comprehensive</strong> approach to data analysis. The findings suggest that 
+            <strong>implementation</strong> of these techniques can yield significant improvements 
+            in performance metrics.
+        </p>
+        
+        <div class="example">
+            "The correlation between user engagement and interface design is evident in the 
+            empirical data collected during the study."
+        </div>
+        
+        <p>
+            Furthermore, the <strong>implications</strong> of these results extend beyond the 
+            immediate scope of this investigation. Future research should focus on replicating 
+            these findings in diverse contexts to establish <strong>generalizability</strong>.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>Features to Test</h2>
+        <ul>
+            <li><strong>Single Word Selection:</strong> Try selecting individual words like "methodology" or "architecture"</li>
+            <li><strong>Multiple Words:</strong> Select phrases like "browser extension" or "vocabulary notebook"</li>
+            <li><strong>Sentence Context:</strong> The extension should capture the full sentence</li>
+            <li><strong>Translation:</strong> Check if the translation appears in the sidebar</li>
+            <li><strong>Notes:</strong> Add your own notes to saved words</li>
+            <li><strong>Search:</strong> Use the search box to find specific words</li>
+            <li><strong>Filter:</strong> Toggle between all words, reviewed, and unreviewed</li>
+            <li><strong>Export/Import:</strong> Test data portability features</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Common Phrases</h2>
+        <p>Here are some common phrases you might want to save:</p>
+        <ul>
+            <li>In accordance with</li>
+            <li>With regard to</li>
+            <li>As a result of</li>
+            <li>In order to</li>
+            <li>On the other hand</li>
+            <li>For the purpose of</li>
+            <li>In contrast to</li>
+            <li>With respect to</li>
+        </ul>
+    </div>
+
+    <footer style="margin-top: 50px; padding-top: 20px; border-top: 2px solid #eee; text-align: center; color: #999;">
+        <p>WordGet Browser Extension - Demo Page</p>
+        <p>Select any text and press Ctrl+Shift+W to save it to your vocabulary notebook</p>
+    </footer>
+</body>
+</html>

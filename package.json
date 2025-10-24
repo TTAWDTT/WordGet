@@ -1,0 +1,31 @@
+{
+  "name": "wordget",
+  "version": "1.0.0",
+  "description": "智能单词本浏览器扩展 - 在阅读网页时快速保存和学习单词",
+  "main": "background.js",
+  "scripts": {
+    "build": "node build.js",
+    "package": "node package.js",
+    "validate": "node validate.js"
+  },
+  "keywords": [
+    "vocabulary",
+    "learning",
+    "translation",
+    "browser-extension",
+    "chrome-extension",
+    "language-learning",
+    "words",
+    "dictionary"
+  ],
+  "author": "WordGet Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TTAWDTT/WordGet.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TTAWDTT/WordGet/issues"
+  },
+  "homepage": "https://github.com/TTAWDTT/WordGet#readme"
+}
