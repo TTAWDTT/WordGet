@@ -181,11 +181,12 @@ No build process required - pure vanilla JavaScript!
 
 ## Performance
 
-- **Initial Load**: < 100ms
-- **Word Save**: < 50ms
-- **Translation**: 200-500ms (network dependent)
-- **Storage Size**: ~1KB per word
-- **Memory Usage**: < 10MB typical
+Estimated performance characteristics:
+- **Initial Load**: Typically < 100ms
+- **Word Save**: Typically < 50ms (local operation)
+- **Translation**: 200-500ms (varies with network and API)
+- **Storage Size**: Approximately 1KB per word
+- **Memory Usage**: Generally < 10MB for typical usage
 
 ## Security
 
