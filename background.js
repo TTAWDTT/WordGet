@@ -112,42 +112,249 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 // Helper function to reliably open side panel
 async function openSidePanel(windowId, tabId) {
-  try {
-    console.log('Attempting to open side panel for window:', windowId);
-    
-    // Method 1: Try the standard API
-    await chrome.sidePanel.open({ windowId: windowId });
-    console.log('Side panel opened successfully');
-    return true;
-  } catch (error) {
-    console.log('Standard method failed:', error.message);
-    
-    // Method 2: Try with tabId if available
-    if (tabId) {
-      try {
-        await chrome.sidePanel.open({ tabId: tabId });
-        console.log('Side panel opened with tabId');
-        return true;
-      } catch (err2) {
-        console.log('TabId method also failed:', err2.message);
-      }
-    }
-    
-    // Method 3: Try setting panel options first
+  if (!chrome.sidePanel || typeof chrome.sidePanel.open !== 'function') {
+    console.warn('chrome.sidePanel API unavailable in this browser');
+    return false;
+  }
+
+  console.log('Preparing side panel for window:', windowId, 'tab:', tabId);
+
+  if (tabId && typeof chrome.sidePanel.setOptions === 'function') {
     try {
       await chrome.sidePanel.setOptions({
         tabId: tabId,
         path: 'sidebar.html',
         enabled: true
       });
-      await chrome.sidePanel.open({ windowId: windowId });
-      console.log('Side panel opened after setting options');
-      return true;
-    } catch (err3) {
-      console.error('All methods to open side panel failed:', err3);
-      return false;
+      console.log('Side panel options bound to tab');
+    } catch (optionsError) {
+      console.log('Failed to set tab-specific side panel options:', optionsError.message);
     }
   }
+
+  if (tabId) {
+    try {
+      await chrome.sidePanel.open({ tabId: tabId });
+      console.log('Side panel opened with tabId');
+      return true;
+    } catch (tabError) {
+      console.log('tabId open attempt failed:', tabError.message);
+    }
+  }
+
+  if (windowId) {
+    try {
+      await chrome.sidePanel.open({ windowId: windowId });
+      console.log('Side panel opened with windowId');
+      return true;
+    } catch (windowError) {
+      console.log('windowId open attempt failed:', windowError.message);
+    }
+  }
+
+  if (typeof chrome.sidePanel.setOptions === 'function') {
+    try {
+      await chrome.sidePanel.setOptions({
+        path: 'sidebar.html',
+        enabled: true
+      });
+
+      if (windowId) {
+        await chrome.sidePanel.open({ windowId: windowId });
+        console.log('Side panel opened after global enable');
+        return true;
+      }
+    } catch (globalError) {
+      console.log('Global side panel enable failed:', globalError.message);
+    }
+  }
+
+  console.error('Unable to open the side panel via available methods');
+  return false;
+}
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function showSelectionWarning(message) {
+  console.warn(message);
+
+  if (!chrome.action || typeof chrome.action.setBadgeText !== 'function') {
+    return;
+  }
+
+  try {
+    await chrome.action.setBadgeBackgroundColor({ color: '#d9534f' });
+    await chrome.action.setBadgeText({ text: '!' });
+  } catch (error) {
+    console.log('Unable to update badge for warning:', error.message);
+    return;
+  }
+
+  setTimeout(() => {
+    chrome.action.setBadgeText({ text: '' }).catch(() => {
+      // ignore
+    });
+  }, 2000);
+}
+
+// Retrieve selection details from tab with fallbacks (supports PDF viewer)
+async function getSelectionData(tab) {
+  if (!tab || !tab.id) {
+    return null;
+  }
+
+  const restrictedPrefixes = [
+    'chrome:',
+    'chrome-extension:',
+    'chrome-untrusted:',
+    'edge:',
+    'about:',
+    'opera:',
+    'vivaldi:',
+    'brave:',
+    'ms-browser-extension:',
+    'moz-extension:',
+    'devtools:'
+  ];
+  const tabUrl = tab.url || '';
+  const isRestricted = restrictedPrefixes.some(prefix => tabUrl.startsWith(prefix));
+
+  if (isRestricted) {
+    console.log('Selection capture not permitted on this page:', tabUrl);
+    return null;
+  }
+
+  let response = null;
+
+  try {
+    response = await chrome.tabs.sendMessage(tab.id, { action: 'getSelection' });
+    if (response?.text) {
+      return { ...response, viaContentScript: true };
+    }
+  } catch (messageError) {
+    console.log('Content script selection attempt failed:', messageError.message);
+  }
+
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ['content.js']
+    });
+    await chrome.scripting.insertCSS({
+      target: { tabId: tab.id },
+      files: ['content.css']
+    });
+    console.log('Content script injected for selection retry');
+
+    await sleep(80);
+    response = await chrome.tabs.sendMessage(tab.id, { action: 'getSelection' });
+    if (response?.text) {
+      return { ...response, viaContentScript: true };
+    }
+  } catch (injectError) {
+    console.log('Content script injection unavailable:', injectError.message);
+  }
+
+  const fallback = await captureSelectionFallback(tab.id);
+  if (fallback?.text) {
+    return {
+      text: fallback.text,
+      sentence: fallback.sentence || fallback.text,
+      url: tab.url || fallback.url || '',
+      pageTitle: tab.title || fallback.pageTitle || '',
+      viaContentScript: false
+    };
+  }
+
+  if (response?.text) {
+    return { ...response, viaContentScript: true };
+  }
+
+  return null;
+}
+
+// Fallback selection capture using executeScript (handles PDF text layer)
+async function captureSelectionFallback(tabId) {
+  if (!tabId) {
+    return null;
+  }
+
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: tabId, allFrames: true },
+      world: 'MAIN',
+      func: () => {
+        try {
+          const selection = window.getSelection();
+          if (!selection || !selection.toString().trim()) {
+            return { text: '' };
+          }
+
+          const text = selection.toString().trim();
+          let sentence = text;
+
+          if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            let container = range.commonAncestorContainer;
+
+            if (container && container.nodeType === Node.TEXT_NODE) {
+              container = container.parentElement;
+            }
+
+            let depth = 0;
+            let contextText = '';
+
+            while (container && depth < 6) {
+              const candidate = (container?.innerText || container?.textContent || '').replace(/\s+/g, ' ').trim();
+              if (candidate && candidate.length > text.length) {
+                contextText = candidate;
+                break;
+              }
+              container = container.parentElement;
+              depth++;
+            }
+
+            if (contextText) {
+              const normalizedContext = contextText;
+              const normalizedSelection = text.replace(/\s+/g, ' ');
+              const lowerContext = normalizedContext.toLowerCase();
+              const lowerSelection = normalizedSelection.toLowerCase();
+              const index = lowerContext.indexOf(lowerSelection);
+
+              if (index >= 0) {
+                const start = Math.max(0, index - 80);
+                const end = Math.min(normalizedContext.length, index + normalizedSelection.length + 80);
+                sentence = normalizedContext.slice(start, end).trim();
+              } else {
+                sentence = normalizedContext.slice(0, 200).trim();
+              }
+            }
+          }
+
+          return {
+            text,
+            sentence,
+            url: window.location.href,
+            pageTitle: document.title
+          };
+        } catch (error) {
+          return { text: '', error: error.message };
+        }
+      }
+    });
+
+    if (Array.isArray(results)) {
+      for (const frame of results) {
+        if (frame?.result?.text) {
+          return frame.result;
+        }
+      }
+    }
+  } catch (error) {
+    console.log('Fallback selection capture failed:', error.message);
+  }
+
+  return null;
 }
 
 // Detect and apply page theme (with timeout and error handling)
@@ -226,48 +433,18 @@ chrome.commands.onCommand.addListener(async (command) => {
       
       console.log('Save word command triggered for tab:', tab.id);
       
-      // First, try to get selection from content script
-      let response = null;
-      try {
-        response = await chrome.tabs.sendMessage(tab.id, { action: 'getSelection' });
-      } catch (error) {
-        console.error('Content script not responding:', error.message);
-        
-        // Try to inject content script if it's not loaded
-        try {
-          await chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            files: ['content.js']
-          });
-          
-          await chrome.scripting.insertCSS({
-            target: { tabId: tab.id },
-            files: ['content.css']
-          });
-          
-          console.log('Content script injected, retrying...');
-          
-          // Wait a bit for script to initialize
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          // Retry getting selection
-          response = await chrome.tabs.sendMessage(tab.id, { action: 'getSelection' });
-        } catch (injectError) {
-          console.error('Cannot inject content script:', injectError.message);
-          alert('无法在此页面保存单词。某些特殊页面（如浏览器设置页）不支持此功能。');
-          return;
-        }
-      }
-      
-      if (!response || !response.text) {
-        console.log('No text selected');
+      const selectionData = await getSelectionData(tab);
+
+      if (!selectionData || !selectionData.text) {
+        console.log('No selectable text found in active tab');
+        await showSelectionWarning('没有检测到可保存的文本，请确认已选中内容或页面允许扩展访问。');
         return;
       }
-      
-      console.log('Selected text:', response.text);
+
+      console.log('Selected text:', selectionData.text);
       
       // Save the word
-      const word = await saveWord(response);
+      const word = await saveWord(selectionData);
       console.log('Word saved successfully:', word);
       
       // Detect theme in parallel (don't wait)
@@ -308,7 +485,7 @@ chrome.commands.onCommand.addListener(async (command) => {
       
     } catch (error) {
       console.error('Error in save-word command:', error);
-      alert('保存单词时出错: ' + error.message);
+      await showSelectionWarning(`保存单词时出错: ${error.message}`);
     }
   }
 });
@@ -452,20 +629,33 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     try {
       console.log('Context menu save triggered');
       
+      let selectionData = null;
+      if (tab && tab.id) {
+        selectionData = await getSelectionData(tab);
+      }
+
       const wordData = {
-        text: info.selectionText,
-        url: tab.url,
-        pageTitle: tab.title,
-        sentence: '' // Context menu doesn't capture sentence
+        text: (selectionData?.text || info.selectionText || '').trim(),
+        sentence: selectionData?.sentence || '',
+        url: tab?.url || selectionData?.url || '',
+        pageTitle: tab?.title || selectionData?.pageTitle || ''
       };
+
+      if (!wordData.text) {
+        console.log('Context menu triggered without retrievable text');
+        await showSelectionWarning('未能读取选中的文本，请重试。');
+        return;
+      }
       
       const word = await saveWord(wordData);
       console.log('Word saved from context menu:', word);
       
       // Detect theme in parallel (don't wait)
-      detectAndApplyTheme(tab.id).catch(err => {
-        console.log('Theme detection skipped');
-      });
+      if (tab?.id) {
+        detectAndApplyTheme(tab.id).catch(err => {
+          console.log('Theme detection skipped');
+        });
+      }
       
       // Get settings
       const { settings } = await chrome.storage.local.get(['settings']);
@@ -473,7 +663,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       
       console.log('Auto-open sidebar setting (context menu):', autoOpen);
       
-      if (autoOpen) {
+      if (autoOpen && tab?.windowId && tab?.id) {
         console.log('Attempting to open sidebar from context menu...');
         const opened = await openSidePanel(tab.windowId, tab.id);
         
@@ -497,7 +687,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       
     } catch (error) {
       console.error('Error saving from context menu:', error);
-      alert('保存单词时出错: ' + error.message);
+      await showSelectionWarning(`保存单词时出错: ${error.message}`);
     }
   }
 });

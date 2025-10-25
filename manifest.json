@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "WordGet - Vocabulary Notebook",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "智能单词本：选中单词即可保存，自动翻译并提取例句",
   "permissions": [
     "storage",

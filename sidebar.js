@@ -3,9 +3,12 @@
 let currentWords = [];
 let currentFilter = 'all';
 let currentSearch = '';
+let currentSearchRaw = '';
+let currentSort = 'newest';
 let currentWordId = null;
 let currentTheme = null;
 let isLoading = false;
+let visibleWords = [];
 
 // Initialize sidebar
 document.addEventListener('DOMContentLoaded', () => {
@@ -23,9 +26,17 @@ function setupEventListeners() {
   document.getElementById('settingsBtn').addEventListener('click', showSettings);
   
   // Search
-  document.getElementById('searchInput').addEventListener('input', (e) => {
-    currentSearch = e.target.value.toLowerCase();
+  const searchInput = document.getElementById('searchInput');
+  searchInput.addEventListener('input', (e) => {
+    currentSearchRaw = e.target.value;
+    currentSearch = currentSearchRaw.trim().toLowerCase();
     filterAndDisplayWords();
+  });
+
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && visibleWords.length > 0) {
+      showWordDetail(visibleWords[0].id);
+    }
   });
   
   // Filter tabs
@@ -37,6 +48,15 @@ function setupEventListeners() {
       filterAndDisplayWords();
     });
   });
+
+  const sortSelect = document.getElementById('sortSelect');
+  if (sortSelect) {
+    sortSelect.value = currentSort;
+    sortSelect.addEventListener('change', (e) => {
+      currentSort = e.target.value;
+      filterAndDisplayWords();
+    });
+  }
   
   // Back buttons
   document.getElementById('backToList').addEventListener('click', showWordList);
@@ -98,7 +118,7 @@ async function loadWords() {
 
 // Filter and display words based on current filters
 function filterAndDisplayWords() {
-  let filtered = currentWords;
+  let filtered = currentWords.slice();
   
   // Apply filter
   if (currentFilter === 'reviewed') {
@@ -109,14 +129,50 @@ function filterAndDisplayWords() {
   
   // Apply search
   if (currentSearch) {
-    filtered = filtered.filter(w => 
-      w.text.toLowerCase().includes(currentSearch) ||
-      (w.translation && w.translation.toLowerCase().includes(currentSearch)) ||
-      (w.sentence && w.sentence.toLowerCase().includes(currentSearch))
-    );
+    filtered = filtered.filter(w => {
+      const query = currentSearch;
+      const text = (w.text || '').toLowerCase();
+      const translation = (w.translation || '').toLowerCase();
+      const sentence = (w.sentence || '').toLowerCase();
+      const notes = (w.notes || '').toLowerCase();
+      const pageTitle = (w.pageTitle || '').toLowerCase();
+      return text.includes(query) ||
+             translation.includes(query) ||
+             sentence.includes(query) ||
+             notes.includes(query) ||
+             pageTitle.includes(query);
+    });
   }
   
+  filtered = sortWords(filtered);
+  visibleWords = filtered;
   displayWords(filtered);
+}
+
+function sortWords(words) {
+  const sorted = words.slice();
+  switch (currentSort) {
+    case 'oldest':
+      sorted.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      break;
+    case 'alpha':
+      sorted.sort((a, b) => (a.text || '').localeCompare(b.text || '', undefined, { sensitivity: 'base' }));
+      break;
+    case 'alphaDesc':
+      sorted.sort((a, b) => (b.text || '').localeCompare(a.text || '', undefined, { sensitivity: 'base' }));
+      break;
+    case 'review':
+      sorted.sort((a, b) => {
+        if (!!a.reviewed === !!b.reviewed) {
+          return (b.timestamp || 0) - (a.timestamp || 0);
+        }
+        return a.reviewed ? 1 : -1;
+      });
+      break;
+    default:
+      sorted.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  }
+  return sorted;
 }
 
 // Display words in the list
@@ -124,22 +180,38 @@ function displayWords(words) {
   const container = document.getElementById('wordListContainer');
   const emptyState = document.getElementById('emptyState');
   const totalWords = document.getElementById('totalWords');
+  const visibleCount = document.getElementById('visibleCount');
   
-  totalWords.textContent = words.length;
+  totalWords.textContent = currentWords.length;
+  if (visibleCount) {
+    visibleCount.textContent = words.length;
+  }
   
   if (words.length === 0) {
-    container.innerHTML = '';
-    emptyState.style.display = 'flex';
+    if (currentWords.length === 0) {
+      container.innerHTML = '';
+      emptyState.style.display = 'flex';
+    } else {
+      emptyState.style.display = 'none';
+      container.innerHTML = '<div class="empty-result">没有找到匹配的单词</div>';
+    }
     return;
   }
   
   emptyState.style.display = 'none';
   
-  container.innerHTML = words.map(word => `
+  const searchTerm = currentSearchRaw.trim();
+  container.innerHTML = words.map(word => {
+    const wordText = highlightMatch(word.text, searchTerm);
+    const translation = word.translation ? highlightMatch(word.translation, searchTerm) : '';
+    const sentenceSnippet = word.sentence ? truncate(word.sentence, 80) : '';
+    const sentence = sentenceSnippet ? highlightMatch(sentenceSnippet, searchTerm) : '';
+    
+    return `
     <div class="word-item" data-word-id="${word.id}" data-reviewed="${word.reviewed || false}">
       <div class="word-item-header">
         <div class="word-item-text">
-          ${escapeHtml(word.text)}
+          ${wordText}
           ${word.reviewed ? '<span class="reviewed-badge">已掌握</span>' : ''}
         </div>
         <div class="word-item-meta">
@@ -150,10 +222,11 @@ function displayWords(words) {
           ${formatDate(word.timestamp)}
         </div>
       </div>
-      ${word.translation ? `<div class="word-item-translation">${escapeHtml(word.translation)}</div>` : ''}
-      ${word.sentence ? `<div class="word-item-sentence">"${escapeHtml(truncate(word.sentence, 80))}"</div>` : ''}
+      ${translation ? `<div class="word-item-translation">${translation}</div>` : ''}
+      ${sentence ? `<div class="word-item-sentence">"${sentence}"</div>` : ''}
     </div>
-  `).join('');
+    `;
+  }).join('');
   
   // Add click handlers
   container.querySelectorAll('.word-item').forEach(item => {
@@ -581,6 +654,22 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function highlightMatch(text, query) {
+  if (!text) return '';
+  const safeText = escapeHtml(text);
+  if (!query) return safeText;
+  try {
+    const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi');
+    return safeText.replace(regex, '<mark>$1</mark>');
+  } catch (error) {
+    return safeText;
+  }
 }
 
 function truncate(text, maxLength) {

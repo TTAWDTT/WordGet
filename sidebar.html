@@ -112,7 +112,21 @@
     <!-- Word list -->
     <div id="wordList" class="word-list">
       <div class="word-stats">
-        <span>共 <strong id="totalWords">0</strong> 个单词</span>
+        <div class="word-counts">
+          <span>共 <strong id="totalWords">0</strong> 个单词</span>
+          <span class="divider">•</span>
+          <span>当前显示 <strong id="visibleCount">0</strong></span>
+        </div>
+        <div class="sort-controls">
+          <label for="sortSelect">排序</label>
+          <select id="sortSelect">
+            <option value="newest">最新保存</option>
+            <option value="oldest">最早保存</option>
+            <option value="alpha">字母 A → Z</option>
+            <option value="alphaDesc">字母 Z → A</option>
+            <option value="review">复习优先</option>
+          </select>
+        </div>
       </div>
       <div id="wordListContainer" class="word-list-container">
         <!-- Words will be dynamically inserted here -->
@@ -196,7 +210,7 @@
       </div>
 
       <div class="settings-footer">
-        <p>WordGet v1.0.0</p>
+        <p>WordGet v1.0.2</p>
         <p class="hint">智能单词本浏览器扩展</p>
       </div>
     </div>

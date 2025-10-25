@@ -170,11 +170,55 @@ body {
   padding: 16px 20px 12px;
   font-size: 13px;
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .word-stats strong {
   color: var(--primary);
   font-weight: 600;
+}
+
+.word-counts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.word-stats .divider {
+  color: var(--text-tertiary);
+}
+
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-controls label {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.sort-controls select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.sort-controls select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.15);
 }
 
 .word-list-container {
@@ -257,6 +301,13 @@ body {
   padding: 60px 20px;
   text-align: center;
   color: var(--text-tertiary);
+}
+
+.empty-result {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 14px;
 }
 
 .empty-state svg {
@@ -397,6 +448,13 @@ body {
 
 .source-link:hover {
   opacity: 0.8;
+}
+
+mark {
+  background: rgba(102, 126, 234, 0.25);
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 4px;
 }
 
 #detailNotes {
