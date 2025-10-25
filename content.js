@@ -1,31 +1,46 @@
 // Content script for WordGet - handles text selection and context extraction
 
-console.log('WordGet content script loaded');
+console.log('WordGet content script loaded on:', window.location.href);
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log('Content script received message:', request.action);
+  
   if (request.action === 'getSelection') {
-    const selection = window.getSelection();
-    const selectedText = selection.toString().trim();
-    
-    if (selectedText) {
-      const sentence = extractSentence(selection);
+    try {
+      const selection = window.getSelection();
+      const selectedText = selection.toString().trim();
       
-      sendResponse({
-        text: selectedText,
-        sentence: sentence,
-        url: window.location.href,
-        pageTitle: document.title
-      });
+      console.log('Selected text:', selectedText);
       
-      // Show visual feedback
-      showSavedNotification(selectedText);
-    } else {
-      sendResponse({ text: '' });
+      if (selectedText) {
+        const sentence = extractSentence(selection);
+        
+        const response = {
+          text: selectedText,
+          sentence: sentence,
+          url: window.location.href,
+          pageTitle: document.title
+        };
+        
+        console.log('Sending response:', response);
+        sendResponse(response);
+        
+        // Show visual feedback
+        showSavedNotification(selectedText);
+      } else {
+        console.log('No text selected');
+        sendResponse({ text: '' });
+      }
+    } catch (error) {
+      console.error('Error in getSelection:', error);
+      sendResponse({ text: '', error: error.message });
     }
+    
+    return true; // Keep channel open for async response
   }
   
-  return true;
+  return false;
 });
 
 // Extract sentence containing the selected text

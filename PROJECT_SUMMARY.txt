@@ -38,7 +38,7 @@ package.json        - Project metadata and scripts
 
 KEY FEATURES:
 -------------
-✓ Word selection with keyboard shortcut (Ctrl+Shift+W)
+✓ Word selection with keyboard shortcut (Ctrl+Shift+S)
 ✓ Automatic translation (Google Translate API)
 ✓ Context sentence extraction
 ✓ Sidebar vocabulary management
@@ -79,7 +79,7 @@ INSTALLATION:
 USAGE:
 ------
 1. Select text on any webpage
-2. Press Ctrl+Shift+W (or Cmd+Shift+W on Mac)
+2. Press Ctrl+Shift+S (or Cmd+Shift+S on Mac)
 3. Word is saved with translation and example sentence
 4. View in sidebar by clicking extension icon
 

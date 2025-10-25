@@ -18,7 +18,7 @@ From REQUEST.md:
 | Requirement | Status | Implementation |
 |------------|--------|----------------|
 | 鼠标选中单词 | ✅ | Content script + window.getSelection() |
-| 快捷键保存 | ✅ | Ctrl+Shift+W (Manifest commands API) |
+| 快捷键保存 | ✅ | Ctrl+Shift+S (Manifest commands API) |
 | 弹出侧栏 | ✅ | Chrome Side Panel API |
 | 翻译单词 | ✅ | Google Translate API (free) |
 | 提取例句 | ✅ | Smart sentence extraction algorithm |
@@ -71,7 +71,7 @@ From REQUEST.md:
 ## 🎨 Features Implemented
 
 ### ✨ User Features
-- [x] One-click word saving (Ctrl+Shift+W)
+- [x] One-click word saving (Ctrl+Shift+S)
 - [x] Right-click context menu
 - [x] Automatic translation
 - [x] Sentence context extraction
@@ -251,7 +251,7 @@ These are appropriate design decisions for a browser extension.
 1. Clone or download the repository
 2. Load in browser as unpacked extension
 3. Select text on any webpage
-4. Press Ctrl+Shift+W
+4. Press Ctrl+Shift+S
 5. View in sidebar
 
 See QUICKSTART.md for detailed instructions.

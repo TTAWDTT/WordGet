@@ -49,7 +49,7 @@ xdg-open demo.html # Linux
 
 On the demo page:
 1. Select any word (try "comprehensive")
-2. Press `Ctrl+Shift+W` (Windows/Linux) or `Cmd+Shift+W` (Mac)
+2. Press `Ctrl+Shift+S` (Windows/Linux) or `Cmd+Shift+S` (Mac)
 3. See the notification appear
 4. Sidebar opens automatically with translation
 
@@ -71,7 +71,7 @@ Visit any English website:
 - News site (BBC, CNN)
 - Technical documentation (MDN, GitHub)
 
-Select words you want to learn and press `Ctrl+Shift+W`!
+Select words you want to learn and press `Ctrl+Shift+S`!
 
 ## 🔥 Common Use Cases
 
@@ -80,7 +80,7 @@ Select words you want to learn and press `Ctrl+Shift+W`!
 1. Visit BBC News or similar
 2. Start reading
 3. Found an unfamiliar word? Select it
-4. Press Ctrl+Shift+W
+4. Press Ctrl+Shift+S
 5. Continue reading (no interruption!)
 6. Review words later in sidebar
 ```
@@ -89,7 +89,7 @@ Select words you want to learn and press `Ctrl+Shift+W`!
 ```
 1. Reading API docs on GitHub
 2. Select technical terms
-3. Press Ctrl+Shift+W
+3. Press Ctrl+Shift+S
 4. Builds your technical vocabulary
 5. Sentence context helps understanding
 ```
@@ -98,7 +98,7 @@ Select words you want to learn and press `Ctrl+Shift+W`!
 ```
 1. Open PDF in browser
 2. Select difficult terms
-3. Press Ctrl+Shift+W
+3. Press Ctrl+Shift+S
 4. Academic context preserved
 5. Easy to review later
 ```
@@ -106,7 +106,7 @@ Select words you want to learn and press `Ctrl+Shift+W`!
 ## 💡 Pro Tips
 
 ### Keyboard Shortcuts
-- `Ctrl+Shift+W` (or `Cmd+Shift+W`) - Save selected word
+- `Ctrl+Shift+S` (or `Cmd+Shift+S`) - Save selected word
 - Click extension icon - Open sidebar
 - Click anywhere in sidebar - Navigate around
 

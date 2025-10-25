@@ -47,7 +47,7 @@ WordGet/
 - **Version**: Manifest V3
 - **Permissions**: storage, activeTab, sidePanel, contextMenus
 - **Host Permissions**: <all_urls>
-- **Commands**: save-word (Ctrl+Shift+W)
+- **Commands**: save-word (Ctrl+Shift+S)
 
 ### Background Script (background.js)
 **Functions:**

@@ -13,7 +13,7 @@ This guide provides comprehensive testing procedures for the WordGet browser ext
 
 ### Core Functionality
 - [ ] **Word Selection**: Select text on webpage
-- [ ] **Keyboard Shortcut**: Ctrl+Shift+W saves word
+- [ ] **Keyboard Shortcut**: Ctrl+Shift+S saves word
 - [ ] **Right-Click Menu**: Context menu appears with selection
 - [ ] **Notification**: Visual feedback when word is saved
 - [ ] **Sidebar Opens**: Sidebar appears after saving
@@ -95,7 +95,7 @@ This guide provides comprehensive testing procedures for the WordGet browser ext
 1. Install extension
 2. Open demo.html
 3. Select "comprehensive"
-4. Press Ctrl+Shift+W
+4. Press Ctrl+Shift+S
 5. **Expected**: Notification appears, sidebar opens with word details
 6. **Verify**: Translation loads, sentence is captured
 
@@ -123,7 +123,7 @@ This guide provides comprehensive testing procedures for the WordGet browser ext
 ### Scenario 5: PDF Reading
 1. Open a PDF in browser
 2. Select text in PDF
-3. Press Ctrl+Shift+W
+3. Press Ctrl+Shift+S
 4. **Expected**: Word saves with correct context
 
 ### Scenario 6: Search and Filter

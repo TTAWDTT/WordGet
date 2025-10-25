@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "WordGet - Vocabulary Notebook",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "智能单词本：选中单词即可保存，自动翻译并提取例句",
   "permissions": [
     "storage",
     "activeTab",
     "sidePanel",
-    "contextMenus"
+    "contextMenus",
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -44,8 +45,8 @@
   "commands": {
     "save-word": {
       "suggested_key": {
-        "default": "Ctrl+Shift+W",
-        "mac": "Command+Shift+W"
+        "default": "Ctrl+Shift+S",
+        "mac": "Command+Shift+S"
       },
       "description": "保存选中的单词到单词本"
     }

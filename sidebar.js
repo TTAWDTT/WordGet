@@ -4,12 +4,16 @@ let currentWords = [];
 let currentFilter = 'all';
 let currentSearch = '';
 let currentWordId = null;
+let currentTheme = null;
+let isLoading = false;
 
 // Initialize sidebar
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('Sidebar initializing...');
   loadWords();
   setupEventListeners();
   loadSettings();
+  loadAndApplyTheme();
 });
 
 // Setup all event listeners
@@ -57,16 +61,38 @@ function setupEventListeners() {
   document.getElementById('apiKey').addEventListener('blur', saveSettings);
   document.getElementById('autoOpenSidebar').addEventListener('change', saveSettings);
   document.getElementById('captureContext').addEventListener('change', saveSettings);
+  
+  // Add adaptive theme listener if element exists
+  const adaptiveThemeCheckbox = document.getElementById('adaptiveTheme');
+  if (adaptiveThemeCheckbox) {
+    adaptiveThemeCheckbox.addEventListener('change', saveSettings);
+  }
 }
 
 // Load words from storage
 async function loadWords() {
+  if (isLoading) {
+    console.log('Already loading words, skipping...');
+    return;
+  }
+  
+  isLoading = true;
+  
   try {
+    console.log('Loading words from storage...');
     const response = await chrome.runtime.sendMessage({ action: 'getWords' });
     currentWords = response.words || [];
+    console.log('Loaded', currentWords.length, 'words');
     filterAndDisplayWords();
   } catch (error) {
     console.error('Error loading words:', error);
+    // Show error message to user
+    const container = document.getElementById('wordListContainer');
+    if (container) {
+      container.innerHTML = '<div style="padding: 20px; text-align: center; color: #dc3545;">加载单词失败，请刷新页面重试</div>';
+    }
+  } finally {
+    isLoading = false;
   }
 }
 
@@ -327,6 +353,12 @@ async function loadSettings() {
   }
   document.getElementById('autoOpenSidebar').checked = settings.autoOpenSidebar !== false;
   document.getElementById('captureContext').checked = settings.captureContext !== false;
+  
+  // Add adaptive theme checkbox if it exists
+  const adaptiveThemeCheckbox = document.getElementById('adaptiveTheme');
+  if (adaptiveThemeCheckbox) {
+    adaptiveThemeCheckbox.checked = settings.adaptiveTheme !== false;
+  }
 }
 
 // Save settings
@@ -337,6 +369,12 @@ async function saveSettings() {
     autoOpenSidebar: document.getElementById('autoOpenSidebar').checked,
     captureContext: document.getElementById('captureContext').checked
   };
+  
+  // Add adaptive theme setting if checkbox exists
+  const adaptiveThemeCheckbox = document.getElementById('adaptiveTheme');
+  if (adaptiveThemeCheckbox) {
+    settings.adaptiveTheme = adaptiveThemeCheckbox.checked;
+  }
   
   await chrome.storage.local.set({ settings });
 }
@@ -405,19 +443,138 @@ async function clearAllWords() {
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'showWord') {
+  if (request.action === 'showWord' || request.action === 'wordSaved') {
+    // Reload words and show the newly saved word
     loadWords().then(() => {
-      // Find the word that was just added
-      const word = currentWords.find(w => 
-        w.text.toLowerCase() === request.data.text.toLowerCase()
-      );
+      let word;
+      
+      if (request.word) {
+        // New format with word object
+        word = currentWords.find(w => w.id === request.word.id);
+      } else if (request.data) {
+        // Old format with data
+        word = currentWords.find(w => 
+          w.text.toLowerCase() === request.data.text.toLowerCase()
+        );
+      }
       
       if (word) {
         showWordDetail(word.id);
       }
     });
   }
+  
+  if (request.action === 'applyTheme') {
+    applyTheme(request.theme);
+  }
+  
+  sendResponse({ received: true });
+  return true;
 });
+
+// Load and apply saved theme
+async function loadAndApplyTheme() {
+  try {
+    console.log('Loading theme...');
+    const { currentTheme, settings } = await chrome.storage.local.get(['currentTheme', 'settings']);
+    
+    if (settings?.adaptiveTheme !== false && currentTheme) {
+      console.log('Applying saved theme:', currentTheme);
+      applyTheme(currentTheme);
+    } else {
+      console.log('Adaptive theme disabled or no theme saved');
+    }
+  } catch (error) {
+    console.error('Could not load theme:', error);
+  }
+}
+
+// Apply theme to sidebar
+function applyTheme(theme) {
+  if (!theme) {
+    console.warn('No theme provided');
+    return;
+  }
+  
+  try {
+    currentTheme = theme;
+    const root = document.documentElement;
+    
+    // Parse primary color
+    const primaryRgb = parseColor(theme.primary);
+    const secondaryRgb = parseColor(theme.secondary);
+    
+    if (primaryRgb) {
+      root.style.setProperty('--primary', theme.primary);
+      
+      // Generate darker version for hover
+      const darker = adjustBrightness(primaryRgb, -20);
+      root.style.setProperty('--primary-dark', `rgb(${darker.r}, ${darker.g}, ${darker.b})`);
+    }
+    
+    if (secondaryRgb) {
+      root.style.setProperty('--secondary', theme.secondary);
+    }
+    
+    if (theme.accent) {
+      root.style.setProperty('--success', theme.accent);
+    }
+    
+    // Apply dark mode if needed
+    if (theme.isDark) {
+      root.style.setProperty('--text-primary', '#e8e8e8');
+      root.style.setProperty('--text-secondary', '#b0b0b0');
+      root.style.setProperty('--text-tertiary', '#888');
+      root.style.setProperty('--bg-primary', '#1a1a1a');
+      root.style.setProperty('--bg-secondary', '#242424');
+      root.style.setProperty('--bg-tertiary', '#2a2a2a');
+      root.style.setProperty('--border', '#3a3a3a');
+      root.style.setProperty('--shadow-sm', '0 1px 3px rgba(0, 0, 0, 0.3)');
+      root.style.setProperty('--shadow-md', '0 4px 6px rgba(0, 0, 0, 0.4)');
+      root.style.setProperty('--shadow-lg', '0 10px 20px rgba(0, 0, 0, 0.5)');
+    } else {
+      // Reset to light mode
+      root.style.setProperty('--text-primary', '#1a1a1a');
+      root.style.setProperty('--text-secondary', '#666');
+      root.style.setProperty('--text-tertiary', '#999');
+      root.style.setProperty('--bg-primary', '#ffffff');
+      root.style.setProperty('--bg-secondary', '#f8f9fa');
+      root.style.setProperty('--bg-tertiary', '#f0f2f5');
+      root.style.setProperty('--border', '#e1e4e8');
+      root.style.setProperty('--shadow-sm', '0 1px 3px rgba(0, 0, 0, 0.05)');
+      root.style.setProperty('--shadow-md', '0 4px 6px rgba(0, 0, 0, 0.07)');
+      root.style.setProperty('--shadow-lg', '0 10px 20px rgba(0, 0, 0, 0.1)');
+    }
+    
+    console.log('Theme applied successfully:', theme);
+  } catch (error) {
+    console.error('Error applying theme:', error);
+  }
+}
+
+// Parse color string to RGB
+function parseColor(colorString) {
+  if (!colorString) return null;
+  
+  const match = colorString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (match) {
+    return {
+      r: parseInt(match[1]),
+      g: parseInt(match[2]),
+      b: parseInt(match[3])
+    };
+  }
+  return null;
+}
+
+// Adjust color brightness
+function adjustBrightness(rgb, amount) {
+  return {
+    r: Math.min(255, Math.max(0, rgb.r + amount)),
+    g: Math.min(255, Math.max(0, rgb.g + amount)),
+    b: Math.min(255, Math.max(0, rgb.b + amount))
+  };
+}
 
 // Utility functions
 function escapeHtml(text) {
