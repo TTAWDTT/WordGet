@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WordGet - 单词本</title>
+  <link rel="stylesheet" href="sidebar.css">
+</head>
+<body>
+  <div class="sidebar-container">
+    <!-- Header -->
+    <header class="sidebar-header">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h1>WordGet</h1>
+      </div>
+      <div class="header-actions">
+        <button id="refreshBtn" class="icon-btn" title="刷新">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button id="settingsBtn" class="icon-btn" title="设置">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="3" stroke-width="2"/>
+            <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Search and filter -->
+    <div class="search-container">
+      <div class="search-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="11" cy="11" r="8" stroke-width="2"/>
+          <path d="m21 21-4.35-4.35" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="搜索单词...">
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all">全部</button>
+        <button class="filter-tab" data-filter="unreviewed">待复习</button>
+        <button class="filter-tab" data-filter="reviewed">已掌握</button>
+      </div>
+    </div>
+
+    <!-- Word detail view -->
+    <div id="wordDetail" class="word-detail hidden">
+      <button class="back-btn" id="backToList">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M19 12H5M12 19l-7-7 7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        返回列表
+      </button>
+      
+      <div class="detail-content">
+        <div class="detail-word">
+          <h2 id="detailWordText"></h2>
+          <button class="icon-btn" id="pronounceBtn" title="发音">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M11 5L6 9H2v6h4l5 4V5z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="detail-section">
+          <h3>翻译</h3>
+          <div id="detailTranslation" class="translation-text">
+            <div class="loading">加载中...</div>
+          </div>
+        </div>
+
+        <div class="detail-section" id="sentenceSection">
+          <h3>例句</h3>
+          <div class="sentence-box">
+            <p id="detailSentence" class="sentence-original"></p>
+            <p id="detailSentenceTranslation" class="sentence-translation">
+              <div class="loading">加载中...</div>
+            </p>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>来源</h3>
+          <div class="source-info">
+            <p id="detailSource"></p>
+            <a id="detailUrl" href="#" target="_blank" class="source-link">查看原文</a>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>笔记</h3>
+          <textarea id="detailNotes" placeholder="添加您的笔记..." rows="4"></textarea>
+        </div>
+
+        <div class="detail-actions">
+          <button id="markReviewedBtn" class="btn btn-primary">
+            <span class="reviewed-text">标记为已掌握</span>
+            <span class="unreviewed-text">标记为待复习</span>
+          </button>
+          <button id="deleteWordBtn" class="btn btn-danger">删除单词</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Word list -->
+    <div id="wordList" class="word-list">
+      <div class="word-stats">
+        <span>共 <strong id="totalWords">0</strong> 个单词</span>
+      </div>
+      <div id="wordListContainer" class="word-list-container">
+        <!-- Words will be dynamically inserted here -->
+      </div>
+      <div id="emptyState" class="empty-state">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" opacity="0.3">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <p>还没有保存单词</p>
+        <p class="hint">选中网页上的单词，按 <kbd>Ctrl+Shift+W</kbd> 保存</p>
+      </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="settingsPanel" class="settings-panel hidden">
+      <button class="back-btn" id="backFromSettings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M19 12H5M12 19l-7-7 7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        返回
+      </button>
+
+      <h2>设置</h2>
+
+      <div class="settings-section">
+        <h3>快捷键</h3>
+        <div class="setting-item">
+          <label>保存单词</label>
+          <span class="shortcut-display">Ctrl+Shift+W</span>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>翻译设置</h3>
+        <div class="setting-item">
+          <label for="translationAPI">翻译接口</label>
+          <select id="translationAPI">
+            <option value="google">Google Translate (免费)</option>
+            <option value="youdao">有道翻译</option>
+            <option value="baidu">百度翻译</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <label for="apiKey">API密钥 (可选)</label>
+          <input type="text" id="apiKey" placeholder="如使用官方API请输入密钥">
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>行为设置</h3>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="autoOpenSidebar" checked>
+            保存单词后自动打开侧边栏
+          </label>
+        </div>
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="captureContext" checked>
+            自动捕获例句
+          </label>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>数据管理</h3>
+        <div class="setting-actions">
+          <button id="exportBtn" class="btn btn-secondary">导出单词本</button>
+          <button id="importBtn" class="btn btn-secondary">导入单词本</button>
+          <input type="file" id="importFile" accept=".json" style="display: none;">
+          <button id="clearAllBtn" class="btn btn-danger">清空所有单词</button>
+        </div>
+      </div>
+
+      <div class="settings-footer">
+        <p>WordGet v1.0.0</p>
+        <p class="hint">智能单词本浏览器扩展</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="sidebar.js"></script>
+</body>
+</html>
