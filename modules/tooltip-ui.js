@@ -8,9 +8,9 @@ export class TooltipUI {
     this.tooltip = null;
     this.theme = null;
     this.hideTimer = null;
+    this.eventListenersAdded = false;
     this.mouseMoveBound = this.handleMouseMove.bind(this);
     this.clickBound = this.handleClick.bind(this);
-    console.log('TooltipUI constructor called');
   }
 
   /**
@@ -19,7 +19,6 @@ export class TooltipUI {
    */
   setTheme(theme) {
     this.theme = theme;
-    console.log('TooltipUI theme set:', theme);
     if (this.tooltip) {
       this.applyThemeStyles();
     }
@@ -30,7 +29,6 @@ export class TooltipUI {
    * @returns {HTMLElement} 提示框元素
    */
   createTooltipElement() {
-    console.log('Creating tooltip element...');
     const tooltip = document.createElement('div');
     tooltip.id = 'wordget-translation-tooltip';
     tooltip.className = 'wordget-tooltip';
@@ -45,7 +43,6 @@ export class TooltipUI {
   applyThemeStyles(element = this.tooltip) {
     if (!element) return;
 
-    console.log('Applying theme styles...');
     const isDark = this.theme?.isDark || false;
     
     if (isDark) {
@@ -64,13 +61,13 @@ export class TooltipUI {
    * @param {Object} params - 参数对象
    */
   show({ word, wordTranslation, sentence, sentenceTranslation, x, y }) {
-    console.log('TooltipUI show called with:', { word, x, y });
+    // 移除旧的事件监听器
+    this.removeEventListeners();
     
     // 如果提示框不存在，则创建
     if (!this.tooltip) {
       this.tooltip = this.createTooltipElement();
       document.body.appendChild(this.tooltip);
-      console.log('Tooltip element appended to body.');
     } else {
       // 如果已存在，确保主题最新
       this.applyThemeStyles();
@@ -114,15 +111,13 @@ export class TooltipUI {
     requestAnimationFrame(() => {
       if (this.tooltip) {
         this.tooltip.classList.add('visible');
-        console.log('Tooltip "visible" class added.');
       }
     });
     
-    // 移除旧的监听器并添加新的
-    document.removeEventListener('mousemove', this.mouseMoveBound);
-    document.removeEventListener('click', this.clickBound, true);
-    document.addEventListener('mousemove', this.mouseMoveBound);
-    document.addEventListener('click', this.clickBound, true);
+    // 延迟添加事件监听器，避免与触发显示的点击事件冲突
+    setTimeout(() => {
+      this.addEventListeners();
+    }, 100);
   }
 
   /**
@@ -157,8 +152,10 @@ export class TooltipUI {
       clearTimeout(this.hideTimer);
       this.hideTimer = null;
     }
+    
+    this.removeEventListeners();
+    
     if (this.tooltip) {
-      console.log('Hiding tooltip...');
       this.tooltip.classList.remove('visible');
       
       // 动画结束后可以安全移除
@@ -166,13 +163,31 @@ export class TooltipUI {
         if (this.tooltip && this.tooltip.parentNode) {
           this.tooltip.parentNode.removeChild(this.tooltip);
           this.tooltip = null;
-          console.log('Tooltip element removed from DOM.');
         }
       }, 300);
     }
+  }
+
+  /**
+   * 添加事件监听器
+   */
+  addEventListeners() {
+    if (this.eventListenersAdded) return;
+    
+    document.addEventListener('mousemove', this.mouseMoveBound);
+    document.addEventListener('click', this.clickBound, true);
+    this.eventListenersAdded = true;
+  }
+
+  /**
+   * 移除事件监听器
+   */
+  removeEventListeners() {
+    if (!this.eventListenersAdded) return;
     
     document.removeEventListener('mousemove', this.mouseMoveBound);
     document.removeEventListener('click', this.clickBound, true);
+    this.eventListenersAdded = false;
   }
 
   /**
