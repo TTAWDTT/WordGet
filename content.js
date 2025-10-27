@@ -325,6 +325,7 @@ function handleTranslateMouseUp(event) {
       x: event?.clientX ?? lastMousePosition.x,
       y: event?.clientY ?? lastMousePosition.y
     };
+    const selectionRect = getSelectionRect(selection);
 
     if (translateDebounceTimer) {
       clearTimeout(translateDebounceTimer);
@@ -334,7 +335,8 @@ function handleTranslateMouseUp(event) {
       processAutomaticTranslation({
         text: selectedText,
         sentence,
-        pointer
+        pointer,
+        selectionRect
       });
     }, 150);
   }, 50);
@@ -352,8 +354,8 @@ function findShadowRoot(element) {
   return null;
 }
 
-async function processAutomaticTranslation({ text, sentence, pointer }) {
-  debugLog('开始处理自动翻译:', { text, sentence, pointer });
+async function processAutomaticTranslation({ text, sentence, pointer, selectionRect }) {
+  debugLog('开始处理自动翻译:', { text, sentence, pointer, selectionRect });
   
   if (!translateModeActive || !text) {
     debugLog('翻译模式未激活或文本为空');
@@ -383,11 +385,15 @@ async function processAutomaticTranslation({ text, sentence, pointer }) {
   const cleanSentence = (sentence && sentence.trim()) || text;
   const limitedSentence = cleanSentence.length > 500 ? cleanSentence.slice(0, 500) : cleanSentence;
 
-  // 确保坐标值有效，如果无效则使用最后记录的鼠标位置
-  const pointerX = (typeof pointer?.x === 'number' && !isNaN(pointer.x)) ? pointer.x : lastMousePosition.x;
-  const pointerY = (typeof pointer?.y === 'number' && !isNaN(pointer.y)) ? pointer.y : lastMousePosition.y;
+  const displayPoint = resolveDisplayPoint({ pointer, selectionRect });
+  const pointerX = displayPoint.x;
+  const pointerY = displayPoint.y;
 
-  debugLog('使用坐标:', { x: pointerX, y: pointerY });
+  debugLog('tooltip 坐标来源:', {
+    source: displayPoint.source,
+    coordinates: { x: pointerX, y: pointerY },
+    selectionRect
+  });
 
   // 显示加载状态
   debugLog('显示加载状态');
@@ -443,6 +449,139 @@ async function processAutomaticTranslation({ text, sentence, pointer }) {
       });
     }
   }
+}
+
+function resolveDisplayPoint({ pointer, selectionRect }) {
+  const isValidNumber = (value) => typeof value === 'number' && Number.isFinite(value);
+
+  if (selectionRect) {
+    const { left, right, top, bottom, width, height } = selectionRect;
+    if ([left, right, top, bottom].every(isValidNumber)) {
+      const effectiveWidth = isValidNumber(width) && width > 0 ? width : (right - left);
+      const centerX = left + Math.max(0, effectiveWidth) / 2;
+      const baselineY = isValidNumber(bottom)
+        ? bottom
+        : (isValidNumber(top) ? top : 0);
+
+      const clampedX = clamp(centerX, 0, window.innerWidth);
+      const clampedY = clamp(baselineY, 0, window.innerHeight);
+
+      return {
+        x: clampedX,
+        y: clampedY,
+        source: 'selection-rect'
+      };
+    }
+  }
+
+  if (pointer && isValidNumber(pointer.x) && isValidNumber(pointer.y)) {
+    return {
+      x: pointer.x,
+      y: pointer.y,
+      source: 'event-pointer'
+    };
+  }
+
+  if (isValidNumber(lastMousePosition.x) && isValidNumber(lastMousePosition.y)) {
+    return {
+      x: lastMousePosition.x,
+      y: lastMousePosition.y,
+      source: 'mouse-memory'
+    };
+  }
+
+  return {
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
+    source: 'viewport-center'
+  };
+}
+
+function clamp(value, min, max) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return min;
+  }
+  return Math.min(Math.max(value, min), max);
+}
+
+function getSelectionRect(selection) {
+  if (!selection || typeof selection.rangeCount !== 'number' || selection.rangeCount === 0) {
+    return null;
+  }
+
+  try {
+    const range = selection.getRangeAt(0);
+    if (!range) {
+      return null;
+    }
+
+    const boundingRect = range.getBoundingClientRect();
+    if (isUsableRect(boundingRect)) {
+      return normalizeRect(boundingRect);
+    }
+
+    const clientRects = typeof range.getClientRects === 'function'
+      ? Array.from(range.getClientRects())
+      : [];
+
+    const usableRects = clientRects.filter(isUsableRect);
+    if (usableRects.length === 0) {
+      return null;
+    }
+
+    const aggregated = usableRects.reduce((acc, rect) => {
+      return {
+        left: Math.min(acc.left, rect.left),
+        top: Math.min(acc.top, rect.top),
+        right: Math.max(acc.right, rect.right),
+        bottom: Math.max(acc.bottom, rect.bottom)
+      };
+    }, {
+      left: Infinity,
+      top: Infinity,
+      right: -Infinity,
+      bottom: -Infinity
+    });
+
+    if ([aggregated.left, aggregated.top, aggregated.right, aggregated.bottom].some(value => !Number.isFinite(value))) {
+      return null;
+    }
+
+    return {
+      left: aggregated.left,
+      top: aggregated.top,
+      right: aggregated.right,
+      bottom: aggregated.bottom,
+      width: aggregated.right - aggregated.left,
+      height: aggregated.bottom - aggregated.top
+    };
+  } catch (error) {
+    debugLog('获取选区矩形失败:', error);
+    return null;
+  }
+}
+
+function isUsableRect(rect) {
+  if (!rect) {
+    return false;
+  }
+  const { width, height, left, top, right, bottom } = rect;
+  const hasPositiveArea = (width > 0 && height > 0) || (width > 0 && height === 0) || (height > 0 && width === 0);
+  const isFiniteRect = [left, top, right, bottom, width, height]
+    .filter(value => typeof value === 'number')
+    .every(Number.isFinite);
+  return hasPositiveArea && isFiniteRect;
+}
+
+function normalizeRect(rect) {
+  return {
+    left: rect.left,
+    top: rect.top,
+    right: rect.right,
+    bottom: rect.bottom,
+    width: rect.width,
+    height: rect.height
+  };
 }
 
 // 显示错误通知
