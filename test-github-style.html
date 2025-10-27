@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Style Test - WordGet Translation Mode</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #58a6ff;
+            border-bottom: 1px solid #21262d;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #58a6ff;
+            margin-top: 24px;
+        }
+        
+        .instructions {
+            background: #1c2128;
+            border: 1px solid #30363d;
+            border-left: 3px solid #58a6ff;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+        
+        code {
+            background: #1c2128;
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 85%;
+            color: #79c0ff;
+        }
+        
+        pre {
+            background: #1c2128;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            overflow-x: auto;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        .markdown-body {
+            line-height: 1.6;
+        }
+        
+        .markdown-body p {
+            margin-bottom: 16px;
+        }
+        
+        .markdown-body ul, .markdown-body ol {
+            padding-left: 2em;
+            margin-bottom: 16px;
+        }
+        
+        .markdown-body li {
+            margin-bottom: 8px;
+        }
+        
+        blockquote {
+            border-left: 4px solid #30363d;
+            padding-left: 16px;
+            color: #8b949e;
+            margin: 16px 0;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 16px 0;
+        }
+        
+        th, td {
+            border: 1px solid #30363d;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #1c2128;
+            font-weight: 600;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 12px;
+            border-radius: 12px;
+            background: #238636;
+            color: white;
+            margin-right: 4px;
+        }
+        
+        /* Shadow DOM 测试容器 */
+        .shadow-host {
+            background: #1c2128;
+            border: 2px dashed #30363d;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+        }
+        
+        /* 特殊容器测试 */
+        .special-box {
+            background: linear-gradient(135deg, #1a1f36 0%, #0f1419 100%);
+            border: 1px solid #30363d;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .special-box::before {
+            content: '特殊容器测试';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 11px;
+            color: #8b949e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 GitHub Style README Test</h1>
+        
+        <div class="instructions">
+            <h3>📖 测试说明</h3>
+            <ol>
+                <li>按 <code>Ctrl+Q</code> 开启翻译阅读模式</li>
+                <li>尝试选择下方各种容器中的英文文本</li>
+                <li>测试是否能在所有场景下成功翻译</li>
+            </ol>
+        </div>
+        
+        <div class="markdown-body">
+            <h2>📦 Standard Markdown Content</h2>
+            
+            <p>
+                This repository contains a <strong>comprehensive collection</strong> of algorithms 
+                and data structures implemented in various programming languages. The goal is to 
+                provide clear, efficient implementations with detailed explanations.
+            </p>
+            
+            <h3>Features</h3>
+            <ul>
+                <li><span class="badge">NEW</span> Support for <code>asynchronous</code> operations</li>
+                <li>Extensive test coverage with <code>unit tests</code></li>
+                <li>Comprehensive documentation and examples</li>
+                <li>Performance optimizations for production use</li>
+            </ul>
+            
+            <h3>Installation</h3>
+            <pre><code>npm install wordget-extension
+# or
+yarn add wordget-extension</code></pre>
+            
+            <h3>API Reference</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Description</th>
+                        <th>Parameters</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>translate()</code></td>
+                        <td>Translates the selected text automatically</td>
+                        <td>text, targetLang</td>
+                    </tr>
+                    <tr>
+                        <td><code>initialize()</code></td>
+                        <td>Initializes the translation module</td>
+                        <td>config</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <blockquote>
+                <p><strong>Note:</strong> The translation feature works seamlessly across different 
+                types of content, including code blocks, tables, and special containers.</p>
+            </blockquote>
+            
+            <h2>🎯 Special Container Tests</h2>
+            
+            <div class="special-box">
+                <h3>Special Box Container</h3>
+                <p>
+                    This text is inside a <strong>special styled container</strong> with custom 
+                    background and positioning. Try selecting this text: <em>"artificial intelligence"</em>, 
+                    <em>"machine learning"</em>, <em>"neural networks"</em>.
+                </p>
+            </div>
+            
+            <h2>📚 Nested Elements Test</h2>
+            
+            <div style="background: #1c2128; padding: 15px; border-radius: 6px;">
+                <div style="background: #161b22; padding: 15px; border-radius: 4px;">
+                    <p>
+                        This paragraph is <strong>deeply nested</strong> within multiple <code>div</code> 
+                        containers. It should still be <em>translatable</em> when you select words like: 
+                        <strong>implementation</strong>, <strong>optimization</strong>, 
+                        <strong>architecture</strong>.
+                    </p>
+                </div>
+            </div>
+            
+            <h2>🔍 Code Block Test</h2>
+            
+            <pre><code>// JavaScript example with comments
+function translateText(input) {
+  // This function demonstrates asynchronous translation
+  return fetch('https://api.translate.com', {
+    method: 'POST',
+    body: JSON.stringify({ text: input })
+  });
+}</code></pre>
+            
+            <p>Try selecting comments or function names in the code block above.</p>
+            
+            <h2>Shadow DOM Test</h2>
+            
+            <div id="shadow-host" class="shadow-host">
+                <p>⚠️ Shadow DOM 内容将通过 JavaScript 动态创建</p>
+            </div>
+            
+            <h2>📊 Complex Table Test</h2>
+            
+            <table>
+                <tr>
+                    <th>Algorithm</th>
+                    <th>Time Complexity</th>
+                    <th>Space Complexity</th>
+                    <th>Use Case</th>
+                </tr>
+                <tr>
+                    <td>Binary Search</td>
+                    <td>O(log n)</td>
+                    <td>O(1)</td>
+                    <td>Searching in sorted arrays efficiently</td>
+                </tr>
+                <tr>
+                    <td>Quick Sort</td>
+                    <td>O(n log n)</td>
+                    <td>O(log n)</td>
+                    <td>General purpose sorting algorithm</td>
+                </tr>
+                <tr>
+                    <td>Hash Table</td>
+                    <td>O(1) average</td>
+                    <td>O(n)</td>
+                    <td>Fast key-value lookups and insertions</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        // 创建 Shadow DOM 用于测试
+        const shadowHost = document.getElementById('shadow-host');
+        const shadowRoot = shadowHost.attachShadow({ mode: 'open' });
+        
+        shadowRoot.innerHTML = `
+            <style>
+                .shadow-content {
+                    background: #0d1117;
+                    padding: 20px;
+                    color: #58a6ff;
+                    border: 2px solid #30363d;
+                    border-radius: 6px;
+                }
+                p { color: #c9d1d9; line-height: 1.6; }
+                strong { color: #79c0ff; }
+            </style>
+            <div class="shadow-content">
+                <h3>✨ Shadow DOM Content</h3>
+                <p>
+                    This content is rendered inside a <strong>Shadow DOM</strong>. 
+                    The extension should be able to detect and translate text selections 
+                    here as well. Try selecting: <strong>implementation</strong>, 
+                    <strong>encapsulation</strong>, <strong>component isolation</strong>.
+                </p>
+                <p>
+                    Shadow DOM provides <strong>style encapsulation</strong> and 
+                    <strong>DOM encapsulation</strong>, making it perfect for 
+                    building reusable web components with <strong>isolated functionality</strong>.
+                </p>
+            </div>
+        `;
+        
+        console.log('✅ Shadow DOM 测试内容已创建');
+        console.log('💡 按 Ctrl+Q 开启翻译阅读模式，然后尝试选择各个容器中的文本');
+    </script>
+</body>
+</html>

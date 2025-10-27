@@ -146,7 +146,14 @@ async function enableTranslateMode(reason = 'manual') {
     }
   }
 
+  // 在 document 和所有 shadow roots 上添加事件监听
   document.addEventListener('mouseup', handleTranslateMouseUp, true);
+  
+  // 为已存在的 Shadow DOM 添加监听
+  attachShadowDOMListeners();
+  
+  // 监听新创建的 Shadow DOM
+  observeShadowDOMCreation();
 
   document.body.classList.add('wordget-translate-mode');
   showTranslateIndicator();
@@ -163,6 +170,15 @@ function disableTranslateMode(reason = 'manual') {
 
   translateModeActive = false;
   document.removeEventListener('mouseup', handleTranslateMouseUp, true);
+  
+  // 移除 Shadow DOM 监听
+  removeShadowDOMListeners();
+  
+  // 停止 Shadow DOM 观察
+  if (window.wordgetShadowObserver) {
+    window.wordgetShadowObserver.disconnect();
+    window.wordgetShadowObserver = null;
+  }
 
   if (translateDebounceTimer) {
     clearTimeout(translateDebounceTimer);
@@ -183,6 +199,81 @@ function disableTranslateMode(reason = 'manual') {
   }
 }
 
+// 存储 Shadow DOM 监听器引用
+let shadowRootListeners = new WeakMap();
+
+// 为所有已存在的 Shadow DOM 附加监听器
+function attachShadowDOMListeners() {
+  const allElements = document.querySelectorAll('*');
+  allElements.forEach(element => {
+    if (element.shadowRoot) {
+      attachListenerToShadowRoot(element.shadowRoot);
+    }
+  });
+}
+
+// 为单个 Shadow Root 附加监听器
+function attachListenerToShadowRoot(shadowRoot) {
+  if (shadowRootListeners.has(shadowRoot)) {
+    return; // 已经附加过了
+  }
+  
+  const listener = (event) => handleTranslateMouseUp(event);
+  shadowRoot.addEventListener('mouseup', listener, true);
+  shadowRootListeners.set(shadowRoot, listener);
+  
+  console.log('✅ Shadow DOM 监听器已附加');
+}
+
+// 移除所有 Shadow DOM 监听器
+function removeShadowDOMListeners() {
+  const allElements = document.querySelectorAll('*');
+  allElements.forEach(element => {
+    if (element.shadowRoot && shadowRootListeners.has(element.shadowRoot)) {
+      const listener = shadowRootListeners.get(element.shadowRoot);
+      element.shadowRoot.removeEventListener('mouseup', listener, true);
+      shadowRootListeners.delete(element.shadowRoot);
+    }
+  });
+}
+
+// 监听新创建的 Shadow DOM
+function observeShadowDOMCreation() {
+  if (window.wordgetShadowObserver) {
+    return; // 已经在监听了
+  }
+  
+  // 使用 MutationObserver 监听 DOM 变化
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          // 检查新添加的节点是否有 Shadow Root
+          if (node.shadowRoot) {
+            attachListenerToShadowRoot(node.shadowRoot);
+          }
+          
+          // 检查新添加节点的所有子节点
+          const shadowHosts = node.querySelectorAll('*');
+          shadowHosts.forEach(element => {
+            if (element.shadowRoot) {
+              attachListenerToShadowRoot(element.shadowRoot);
+            }
+          });
+        }
+      });
+    });
+  });
+  
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+  
+  window.wordgetShadowObserver = observer;
+  console.log('✅ Shadow DOM 创建监听器已启动');
+}
+
 function handleTranslateMouseUp(event) {
   if (!translateModeActive) {
     return;
@@ -190,12 +281,37 @@ function handleTranslateMouseUp(event) {
 
   // 延迟一点获取选择，确保选择已经完成
   setTimeout(() => {
-    const selection = window.getSelection();
-    if (!selection || !selection.toString().trim()) {
-      return;
+    // 尝试多种方式获取选择内容
+    let selection = null;
+    let selectedText = '';
+    
+    // 方法1: 标准 window.getSelection()
+    selection = window.getSelection();
+    selectedText = selection?.toString().trim() || '';
+    
+    // 方法2: 如果标准方法没有结果，尝试从 Shadow DOM 获取
+    if (!selectedText && event.target) {
+      const shadowRoot = findShadowRoot(event.target);
+      if (shadowRoot) {
+        selection = shadowRoot.getSelection?.() || window.getSelection();
+        selectedText = selection?.toString().trim() || '';
+        console.log('📦 从 Shadow DOM 获取选择:', selectedText);
+      }
     }
-
-    const selectedText = selection.toString().trim();
+    
+    // 方法3: 尝试从 document.activeElement 获取（适用于 iframe 和特殊容器）
+    if (!selectedText && document.activeElement) {
+      try {
+        if (document.activeElement.contentWindow) {
+          selection = document.activeElement.contentWindow.getSelection();
+          selectedText = selection?.toString().trim() || '';
+          console.log('🖼️ 从 iframe 获取选择:', selectedText);
+        }
+      } catch (e) {
+        // Cross-origin iframe, 忽略
+      }
+    }
+    
     if (!selectedText) {
       return;
     }
@@ -223,6 +339,18 @@ function handleTranslateMouseUp(event) {
       });
     }, 150);
   }, 50);
+}
+
+// 查找元素所在的 Shadow Root
+function findShadowRoot(element) {
+  let current = element;
+  while (current) {
+    if (current instanceof ShadowRoot) {
+      return current;
+    }
+    current = current.parentNode || current.host;
+  }
+  return null;
 }
 
 async function processAutomaticTranslation({ text, sentence, pointer }) {
@@ -375,47 +503,112 @@ function hideTranslateIndicator() {
   }, 200);
 }
 
-// 提取包含选中文本的句子
+// 提取包含选中文本的句子（增强版，支持 Shadow DOM）
 function extractSentence(selection) {
-  if (!selection.rangeCount) return '';
+  if (!selection || !selection.rangeCount) return '';
   
-  const range = selection.getRangeAt(0);
-  const container = range.commonAncestorContainer;
-  
-  // 获取父元素的文本内容
-  let parentElement = container.nodeType === Node.TEXT_NODE 
-    ? container.parentElement 
-    : container;
-  
-  // 尝试找到段落或句子边界
-  while (parentElement && !['P', 'DIV', 'LI', 'TD', 'ARTICLE', 'SECTION'].includes(parentElement.tagName)) {
-    parentElement = parentElement.parentElement;
+  try {
+    const range = selection.getRangeAt(0);
+    const container = range.commonAncestorContainer;
+    const selectedText = selection.toString().trim();
+    
+    // 获取父元素的文本内容
+    let parentElement = container.nodeType === Node.TEXT_NODE 
+      ? container.parentElement 
+      : container;
+    
+    // 如果在 Shadow DOM 中，需要特殊处理
+    const shadowRoot = findShadowRoot(container);
+    if (shadowRoot && shadowRoot.host) {
+      // 尝试从 Shadow Root 的 host 元素开始查找
+      parentElement = shadowRoot.host;
+    }
+    
+    // 尝试找到段落或句子边界
+    let depth = 0;
+    const maxDepth = 10;
+    while (parentElement && depth < maxDepth) {
+      const tagName = parentElement.tagName;
+      
+      // 扩展识别的容器标签，包括 GitHub 等平台常用的标签
+      if (tagName && [
+        'P', 'DIV', 'LI', 'TD', 'TH', 'ARTICLE', 'SECTION', 
+        'BLOCKQUOTE', 'PRE', 'CODE', 'SPAN', 'H1', 'H2', 'H3', 
+        'H4', 'H5', 'H6', 'DD', 'DT', 'FIGCAPTION'
+      ].includes(tagName)) {
+        
+        const fullText = parentElement.textContent || parentElement.innerText || '';
+        
+        if (fullText && fullText.trim().length > selectedText.length) {
+          // 使用更智能的句子分割
+          return extractSentenceFromText(fullText, selectedText);
+        }
+      }
+      
+      parentElement = parentElement.parentElement || parentElement.parentNode;
+      depth++;
+    }
+    
+    // 如果找不到合适的父元素，返回选中的文本
+    return selectedText;
+  } catch (error) {
+    console.error('提取句子时出错:', error);
+    return selection.toString().trim();
   }
+}
+
+// 从完整文本中提取包含选中文本的句子
+function extractSentenceFromText(fullText, selectedText) {
+  // 清理文本（保留基本结构）
+  const cleanedFullText = fullText.replace(/\s+/g, ' ').trim();
+  const cleanedSelectedText = selectedText.replace(/\s+/g, ' ').trim();
   
-  if (!parentElement) return '';
-  
-  const fullText = parentElement.textContent;
-  const selectedText = selection.toString();
-  
-  // 使用基本标点符号查找句子
-  const sentences = fullText.split(/(?<=[.!?])\s+/);
+  // 方法1：使用标点符号分割
+  const sentenceEnders = /[.!?。！？]/g;
+  let sentences = cleanedFullText.split(sentenceEnders);
   
   // 查找包含选中文本的句子
-  for (const sentence of sentences) {
-    if (sentence.includes(selectedText)) {
-      return sentence.trim();
+  for (let i = 0; i < sentences.length; i++) {
+    const sentence = sentences[i].trim();
+    if (sentence.includes(cleanedSelectedText)) {
+      // 找到了，返回这个句子（可能需要加上标点）
+      let result = sentence;
+      
+      // 尝试恢复标点
+      const endIndex = cleanedFullText.indexOf(sentence) + sentence.length;
+      if (endIndex < cleanedFullText.length) {
+        const nextChar = cleanedFullText[endIndex];
+        if (/[.!?。！？]/.test(nextChar)) {
+          result += nextChar;
+        }
+      }
+      
+      return result.trim();
     }
   }
   
-  // 如果找不到句子，返回选择周围的一部分文本
-  const selectedIndex = fullText.indexOf(selectedText);
+  // 方法2：如果用标点分割找不到，返回选中文本前后的上下文
+  const selectedIndex = cleanedFullText.indexOf(cleanedSelectedText);
   if (selectedIndex >= 0) {
-    const start = Math.max(0, selectedIndex - 50);
-    const end = Math.min(fullText.length, selectedIndex + selectedText.length + 50);
-    return fullText.substring(start, end).trim();
+    const contextLength = 100; // 前后各100个字符
+    const start = Math.max(0, selectedIndex - contextLength);
+    const end = Math.min(cleanedFullText.length, selectedIndex + cleanedSelectedText.length + contextLength);
+    
+    let result = cleanedFullText.substring(start, end).trim();
+    
+    // 如果不是从头开始，添加省略号
+    if (start > 0) {
+      result = '...' + result;
+    }
+    if (end < cleanedFullText.length) {
+      result = result + '...';
+    }
+    
+    return result;
   }
   
-  return '';
+  // 方法3：如果都失败了，返回原文的一部分
+  return cleanedFullText.substring(0, Math.min(200, cleanedFullText.length));
 }
 
 // 单词保存时显示通知
