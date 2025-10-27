@@ -122,13 +122,21 @@
   color: #fff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
-  display: none;
-}
-
-.wordget-translate-mode .wordget-translate-indicator {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  opacity: 0;
+  transform: translateY(-10px) scale(0.9);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+
+.wordget-translate-indicator.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.wordget-translate-mode .wordget-translate-indicator {
   animation: wordgetPulse 2s ease-in-out infinite;
 }
 

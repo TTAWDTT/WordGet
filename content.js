@@ -232,14 +232,14 @@ async function processAutomaticTranslation({ text, sentence, pointer }) {
 
   if (!Translator) {
     console.warn('翻译模块未准备就绪');
+    showErrorNotification('翻译模块未加载');
     return;
   }
 
-  if (!tooltipInstance && TooltipUI) {
-    tooltipInstance = new TooltipUI();
-    if (currentTheme) {
-      tooltipInstance.setTheme(currentTheme);
-    }
+  if (!tooltipInstance) {
+    console.warn('提示框实例未准备就绪');
+    showErrorNotification('提示框未初始化');
+    return;
   }
 
   const now = Date.now();
@@ -255,39 +255,47 @@ async function processAutomaticTranslation({ text, sentence, pointer }) {
   const pointerX = pointer?.x ?? lastMousePosition.x;
   const pointerY = pointer?.y ?? lastMousePosition.y;
 
-  if (tooltipInstance) {
-    tooltipInstance.show({
-      word: text,
-      wordTranslation: '翻译加载中…',
-      sentence: limitedSentence,
-      sentenceTranslation: '',
-      x: pointerX,
-      y: pointerY
-    });
-  }
+  // 显示加载状态
+  tooltipInstance.show({
+    word: text,
+    wordTranslation: '⏳ 翻译中...',
+    sentence: limitedSentence,
+    sentenceTranslation: '',
+    x: pointerX,
+    y: pointerY
+  });
 
   try {
     const translations = await Translator.translateWordAndSentence(text, limitedSentence, 'zh-CN');
+    
+    // 检查是否还在翻译模式且文本未变化
+    if (!translateModeActive || lastTranslateTrigger.text !== text) {
+      return;
+    }
+    
     const wordTranslation = translations.wordTranslation || text;
     const sentenceTranslation = translations.sentenceTranslation || translations.wordTranslation;
 
-    if (tooltipInstance) {
-      tooltipInstance.show({
-        word: text,
-        wordTranslation,
-        sentence: limitedSentence,
-        sentenceTranslation,
-        x: pointerX,
-        y: pointerY
-      });
-    }
+    tooltipInstance.show({
+      word: text,
+      wordTranslation,
+      sentence: limitedSentence,
+      sentenceTranslation,
+      x: pointerX,
+      y: pointerY
+    });
   } catch (error) {
     console.error('翻译阅读模式翻译失败:', error);
+
+    // 仍然显示提示框，但显示错误信息
+    const errorMessage = error.message === '翻译请求超时' 
+      ? '⏱️ 翻译超时，请重试'
+      : '❌ 翻译失败，请检查网络';
 
     if (tooltipInstance) {
       tooltipInstance.show({
         word: text,
-        wordTranslation: '翻译失败，请稍后重试',
+        wordTranslation: errorMessage,
         sentence: limitedSentence,
         sentenceTranslation: '',
         x: pointerX,
@@ -295,6 +303,45 @@ async function processAutomaticTranslation({ text, sentence, pointer }) {
       });
     }
   }
+}
+
+// 显示错误通知
+function showErrorNotification(message) {
+  const notification = document.createElement('div');
+  notification.className = 'wordget-notification';
+  notification.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.classList.add('show');
+  }, 10);
+  
+  setTimeout(() => {
+    notification.classList.remove('show');
+    setTimeout(() => {
+      notification.remove();
+    }, 300);
+  }, 2000);
+}
+
+// 模式通知
+function showModeNotification(message) {
+  const notification = document.createElement('div');
+  notification.className = 'wordget-notification';
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.classList.add('show');
+  }, 10);
+  
+  setTimeout(() => {
+    notification.classList.remove('show');
+    setTimeout(() => {
+      notification.remove();
+    }, 300);
+  }, 1500);
 }
 
 function showTranslateIndicator() {

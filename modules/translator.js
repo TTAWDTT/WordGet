@@ -21,7 +21,18 @@ export const Translator = {
       // 注意：生产环境建议使用官方 API 和 API 密钥
       const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
       
-      const response = await fetch(url);
+      // 添加超时控制
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+      
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0'
+        }
+      });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         throw new Error(`翻译请求失败: ${response.status}`);
@@ -37,7 +48,13 @@ export const Translator = {
       return text;
     } catch (error) {
       console.error('翻译错误:', error);
-      return text; // 翻译失败时返回原文
+      
+      // 如果是超时错误，返回更友好的提示
+      if (error.name === 'AbortError') {
+        throw new Error('翻译请求超时');
+      }
+      
+      throw error;
     }
   },
 
@@ -53,7 +70,7 @@ export const Translator = {
   },
 
   /**
-   * 翻译单词和句子（并行翻译）
+   * 翻译单词和句子（并行翻译，带重试机制）
    * @param {string} word - 单词
    * @param {string} sentence - 句子
    * @param {string} targetLang - 目标语言
@@ -61,9 +78,10 @@ export const Translator = {
    */
   async translateWordAndSentence(word, sentence, targetLang = 'zh-CN') {
     try {
+      // 并行翻译，提高速度
       const [wordTranslation, sentenceTranslation] = await Promise.all([
-        this.translate(word, targetLang),
-        sentence ? this.translate(sentence, targetLang) : Promise.resolve('')
+        this.translateWithRetry(word, targetLang, 2),
+        sentence ? this.translateWithRetry(sentence, targetLang, 2) : Promise.resolve('')
       ]);
 
       return {
@@ -74,9 +92,38 @@ export const Translator = {
       console.error('翻译单词和句子时出错:', error);
       return {
         wordTranslation: word,
-        sentenceTranslation: sentence
+        sentenceTranslation: sentence || ''
       };
     }
+  },
+
+  /**
+   * 带重试机制的翻译
+   * @param {string} text - 要翻译的文本
+   * @param {string} targetLang - 目标语言
+   * @param {number} maxRetries - 最大重试次数
+   * @returns {Promise<string>} 翻译结果
+   */
+  async translateWithRetry(text, targetLang = 'zh-CN', maxRetries = 2) {
+    let lastError;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        if (attempt > 0) {
+          // 重试前等待一小段时间
+          await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+        }
+        
+        const result = await this.translate(text, targetLang);
+        return result;
+      } catch (error) {
+        lastError = error;
+        console.warn(`翻译尝试 ${attempt + 1} 失败:`, error.message);
+      }
+    }
+    
+    // 所有重试都失败
+    throw lastError || new Error('翻译失败');
   },
 
   /**
