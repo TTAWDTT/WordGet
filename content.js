@@ -1,17 +1,17 @@
-// Content script for WordGet - handles text selection and context extraction
+// WordGet 的内容脚本 - 处理文本选择和上下文提取
 
-console.log('WordGet content script loaded on:', window.location.href);
+console.log('WordGet content script 已加载于:', window.location.href);
 
-// Listen for messages from background script
+// 监听来自后台脚本的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('Content script received message:', request.action);
+  console.log('Content script 收到消息:', request.action);
   
   if (request.action === 'getSelection') {
     try {
       const selection = window.getSelection();
       const selectedText = selection.toString().trim();
       
-      console.log('Selected text:', selectedText);
+      console.log('选中的文本:', selectedText);
       
       if (selectedText) {
         const sentence = extractSentence(selection);
@@ -23,39 +23,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           pageTitle: document.title
         };
         
-        console.log('Sending response:', response);
+        console.log('发送响应:', response);
         sendResponse(response);
         
-        // Show visual feedback
+        // 显示视觉反馈
         showSavedNotification(selectedText);
       } else {
-        console.log('No text selected');
+        console.log('没有选中文本');
         sendResponse({ text: '' });
       }
     } catch (error) {
-      console.error('Error in getSelection:', error);
+      console.error('获取选择时出错:', error);
       sendResponse({ text: '', error: error.message });
     }
     
-    return true; // Keep channel open for async response
+    return true; // 保持通道开放以支持异步响应
   }
   
   return false;
 });
 
-// Extract sentence containing the selected text
+// 提取包含选中文本的句子
 function extractSentence(selection) {
   if (!selection.rangeCount) return '';
   
   const range = selection.getRangeAt(0);
   const container = range.commonAncestorContainer;
   
-  // Get the text content of the parent element
+  // 获取父元素的文本内容
   let parentElement = container.nodeType === Node.TEXT_NODE 
     ? container.parentElement 
     : container;
   
-  // Try to find a paragraph or sentence boundary
+  // 尝试找到段落或句子边界
   while (parentElement && !['P', 'DIV', 'LI', 'TD', 'ARTICLE', 'SECTION'].includes(parentElement.tagName)) {
     parentElement = parentElement.parentElement;
   }
@@ -65,17 +65,17 @@ function extractSentence(selection) {
   const fullText = parentElement.textContent;
   const selectedText = selection.toString();
   
-  // Find sentences using basic punctuation
+  // 使用基本标点符号查找句子
   const sentences = fullText.split(/(?<=[.!?])\s+/);
   
-  // Find the sentence containing the selected text
+  // 查找包含选中文本的句子
   for (const sentence of sentences) {
     if (sentence.includes(selectedText)) {
       return sentence.trim();
     }
   }
   
-  // If no sentence found, return a portion of text around selection
+  // 如果找不到句子，返回选择周围的一部分文本
   const selectedIndex = fullText.indexOf(selectedText);
   if (selectedIndex >= 0) {
     const start = Math.max(0, selectedIndex - 50);
@@ -86,19 +86,19 @@ function extractSentence(selection) {
   return '';
 }
 
-// Show notification when word is saved
+// 单词保存时显示通知
 function showSavedNotification(word) {
   const notification = document.createElement('div');
   notification.className = 'wordget-notification';
   notification.textContent = `已保存: ${word}`;
   document.body.appendChild(notification);
   
-  // Fade in
+  // 淡入
   setTimeout(() => {
     notification.classList.add('show');
   }, 10);
   
-  // Fade out and remove
+  // 淡出并移除
   setTimeout(() => {
     notification.classList.remove('show');
     setTimeout(() => {
@@ -107,22 +107,22 @@ function showSavedNotification(word) {
   }, 2000);
 }
 
-// Support for PDF.js viewer
+// PDF.js 查看器支持
 function isPDFViewer() {
   return window.location.href.includes('pdf') || 
          document.querySelector('#viewerContainer') !== null ||
          document.querySelector('embed[type="application/pdf"]') !== null;
 }
 
-// Enhanced selection for PDF
+// PDF 增强选择
 if (isPDFViewer()) {
-  console.log('PDF viewer detected, enabling PDF support');
+  console.log('检测到 PDF 查看器，启用 PDF 支持');
   
-  // PDF.js specific handling
+  // PDF.js 特定处理
   document.addEventListener('mouseup', () => {
     const selection = window.getSelection();
     if (selection && selection.toString().trim()) {
-      // Selection is available, can be captured with keyboard shortcut
+      // 选择可用，可以通过快捷键捕获
     }
   });
 }

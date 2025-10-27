@@ -1,6 +1,6 @@
-// Background service worker for WordGet extension
+// WordGet 扩展的后台服务 Worker
 
-// Theme adapter for color detection
+// 主题适配器 - 用于检测页面颜色
 const themeAdapter = {
   extractPageColors: function() {
     const colors = [];
@@ -8,6 +8,7 @@ const themeAdapter = {
     const sampleSize = Math.min(elements.length, 100);
     const step = Math.floor(elements.length / sampleSize) || 1;
     
+    // 采样页面元素的背景色
     for (let i = 0; i < elements.length && colors.length < 150; i += step) {
       const element = elements[i];
       const styles = window.getComputedStyle(element);
@@ -27,11 +28,11 @@ const themeAdapter = {
   analyzeTheme: function(colorData) {
     if (!colorData) return null;
     
-    // Parse body background
+    // 解析背景色判断明暗模式
     const bgRgb = this.parseColor(colorData.bodyBg);
     const isDark = bgRgb ? this.isColorDark(bgRgb) : false;
     
-    // Find dominant non-grayscale colors
+    // 查找主要非灰度颜色
     const dominantColors = this.findDominantColors(colorData.colors);
     
     return {
@@ -74,6 +75,7 @@ const themeAdapter = {
     colors.forEach(color => {
       const rgb = this.parseColor(color);
       if (rgb && !this.isGrayscale(rgb)) {
+        // 颜色量化：将相似颜色归为一组
         const key = `${Math.floor(rgb.r / 20)}_${Math.floor(rgb.g / 20)}_${Math.floor(rgb.b / 20)}`;
         if (!colorMap[key]) {
           colorMap[key] = { count: 0, rgb };
@@ -82,6 +84,7 @@ const themeAdapter = {
       }
     });
     
+    // 按出现频率排序，取前3个
     const sorted = Object.values(colorMap)
       .sort((a, b) => b.count - a.count)
       .slice(0, 3);
@@ -90,11 +93,11 @@ const themeAdapter = {
   }
 };
 
-// Initialize storage schema on installation
+// 扩展安装时初始化存储结构
 chrome.runtime.onInstalled.addListener(async () => {
-  console.log('WordGet extension installed');
+  console.log('WordGet 扩展已安装');
   
-  // Initialize default settings
+  // 初始化默认设置
   const defaultSettings = {
     translationAPI: 'google',
     apiKey: '',
@@ -105,76 +108,80 @@ chrome.runtime.onInstalled.addListener(async () => {
   
   await chrome.storage.local.set({ settings: defaultSettings });
   
-  // Set side panel behavior to open on action click
-  await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
-    .catch(err => console.log('Side panel behavior setting not supported:', err));
+  // 设置侧边栏行为：点击扩展图标时打开侧边栏
+  try {
+    await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+    console.log('侧边栏行为已设置');
+  } catch (err) {
+    console.log('当前浏览器版本不支持 setPanelBehavior:', err.message);
+  }
 });
 
-// Helper function to reliably open side panel
+// 辅助函数：可靠地打开侧边栏（多策略尝试）
 async function openSidePanel(windowId, tabId) {
-  if (!chrome.sidePanel || typeof chrome.sidePanel.open !== 'function') {
-    console.warn('chrome.sidePanel API unavailable in this browser');
+  console.log('🚪 开始尝试打开侧边栏...', { windowId, tabId });
+  
+  if (!chrome.sidePanel) {
+    console.error('❌ 当前浏览器不支持 sidePanel API');
     return false;
   }
 
-  console.log('Preparing side panel for window:', windowId, 'tab:', tabId);
+  // 策略1：先确保侧边栏已启用（全局设置）
+  try {
+    if (chrome.sidePanel.setOptions) {
+      await chrome.sidePanel.setOptions({
+        path: 'sidebar.html',
+        enabled: true
+      });
+      console.log('✅ 全局侧边栏选项已设置');
+    }
+  } catch (error) {
+    console.log('⚠️ 设置全局选项失败:', error.message);
+  }
 
-  if (tabId && typeof chrome.sidePanel.setOptions === 'function') {
+  // 策略2：为当前标签启用侧边栏
+  if (tabId && chrome.sidePanel.setOptions) {
     try {
       await chrome.sidePanel.setOptions({
         tabId: tabId,
         path: 'sidebar.html',
         enabled: true
       });
-      console.log('Side panel options bound to tab');
-    } catch (optionsError) {
-      console.log('Failed to set tab-specific side panel options:', optionsError.message);
+      console.log('✅ 标签级侧边栏选项已设置');
+    } catch (error) {
+      console.log('⚠️ 设置标签选项失败:', error.message);
     }
   }
 
-  if (tabId) {
-    try {
-      await chrome.sidePanel.open({ tabId: tabId });
-      console.log('Side panel opened with tabId');
-      return true;
-    } catch (tabError) {
-      console.log('tabId open attempt failed:', tabError.message);
-    }
-  }
-
+  // 策略3：使用 windowId 打开（最通用的方法）
   if (windowId) {
     try {
       await chrome.sidePanel.open({ windowId: windowId });
-      console.log('Side panel opened with windowId');
+      console.log('✅ 侧边栏已通过 windowId 打开');
       return true;
-    } catch (windowError) {
-      console.log('windowId open attempt failed:', windowError.message);
+    } catch (error) {
+      console.log('⚠️ windowId 方式失败:', error.message);
     }
   }
 
-  if (typeof chrome.sidePanel.setOptions === 'function') {
+  // 策略4：使用 tabId 打开（Chrome 116+ 支持）
+  if (tabId) {
     try {
-      await chrome.sidePanel.setOptions({
-        path: 'sidebar.html',
-        enabled: true
-      });
-
-      if (windowId) {
-        await chrome.sidePanel.open({ windowId: windowId });
-        console.log('Side panel opened after global enable');
-        return true;
-      }
-    } catch (globalError) {
-      console.log('Global side panel enable failed:', globalError.message);
+      await chrome.sidePanel.open({ tabId: tabId });
+      console.log('✅ 侧边栏已通过 tabId 打开');
+      return true;
+    } catch (error) {
+      console.log('⚠️ tabId 方式失败:', error.message);
     }
   }
 
-  console.error('Unable to open the side panel via available methods');
+  console.error('❌ 所有打开侧边栏的方法都失败了');
   return false;
 }
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// 显示选择失败的警告（使用扩展图标徽章）
 async function showSelectionWarning(message) {
   console.warn(message);
 
@@ -183,26 +190,28 @@ async function showSelectionWarning(message) {
   }
 
   try {
+    // 设置红色徽章背景
     await chrome.action.setBadgeBackgroundColor({ color: '#d9534f' });
+    // 显示感叹号
     await chrome.action.setBadgeText({ text: '!' });
   } catch (error) {
-    console.log('Unable to update badge for warning:', error.message);
+    console.log('无法更新徽章:', error.message);
     return;
   }
 
+  // 2秒后自动清除徽章
   setTimeout(() => {
-    chrome.action.setBadgeText({ text: '' }).catch(() => {
-      // ignore
-    });
+    chrome.action.setBadgeText({ text: '' }).catch(() => {});
   }, 2000);
 }
 
-// Retrieve selection details from tab with fallbacks (supports PDF viewer)
+// 从标签页获取选择的文本（支持 PDF 等特殊页面）
 async function getSelectionData(tab) {
   if (!tab || !tab.id) {
     return null;
   }
 
+  // 受限页面列表（无法注入脚本的页面）
   const restrictedPrefixes = [
     'chrome:',
     'chrome-extension:',
@@ -220,21 +229,23 @@ async function getSelectionData(tab) {
   const isRestricted = restrictedPrefixes.some(prefix => tabUrl.startsWith(prefix));
 
   if (isRestricted) {
-    console.log('Selection capture not permitted on this page:', tabUrl);
+    console.log('当前页面不允许捕获选择:', tabUrl);
     return null;
   }
 
   let response = null;
 
+  // 方法1：尝试从已加载的 content script 获取
   try {
     response = await chrome.tabs.sendMessage(tab.id, { action: 'getSelection' });
     if (response?.text) {
       return { ...response, viaContentScript: true };
     }
   } catch (messageError) {
-    console.log('Content script selection attempt failed:', messageError.message);
+    console.log('Content script 未响应:', messageError.message);
   }
 
+  // 方法2：动态注入 content script 后重试
   try {
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
@@ -244,7 +255,7 @@ async function getSelectionData(tab) {
       target: { tabId: tab.id },
       files: ['content.css']
     });
-    console.log('Content script injected for selection retry');
+    console.log('Content script 已动态注入');
 
     await sleep(80);
     response = await chrome.tabs.sendMessage(tab.id, { action: 'getSelection' });
@@ -252,9 +263,10 @@ async function getSelectionData(tab) {
       return { ...response, viaContentScript: true };
     }
   } catch (injectError) {
-    console.log('Content script injection unavailable:', injectError.message);
+    console.log('无法注入 content script:', injectError.message);
   }
 
+  // 方法3：使用回退方案（支持 PDF 文本层）
   const fallback = await captureSelectionFallback(tab.id);
   if (fallback?.text) {
     return {
@@ -273,7 +285,7 @@ async function getSelectionData(tab) {
   return null;
 }
 
-// Fallback selection capture using executeScript (handles PDF text layer)
+// 回退方案：使用 executeScript 捕获选择（处理 PDF 等）
 async function captureSelectionFallback(tabId) {
   if (!tabId) {
     return null;
@@ -351,26 +363,26 @@ async function captureSelectionFallback(tabId) {
       }
     }
   } catch (error) {
-    console.log('Fallback selection capture failed:', error.message);
+    console.log('回退方案捕获失败:', error.message);
   }
 
   return null;
 }
 
-// Detect and apply page theme (with timeout and error handling)
+// 检测并应用页面主题（带超时保护）
 async function detectAndApplyTheme(tabId) {
   try {
     const { settings } = await chrome.storage.local.get(['settings']);
     if (settings?.adaptiveTheme === false) return;
     
-    // Add timeout to prevent hanging
+    // 添加超时防止卡顿
     const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 1000));
     
     const scriptPromise = chrome.scripting.executeScript({
       target: { tabId: tabId },
       func: themeAdapter.extractPageColors
     }).catch(err => {
-      console.log('Cannot inject theme script:', err.message);
+      console.log('无法注入主题脚本:', err.message);
       return null;
     });
     
@@ -386,111 +398,134 @@ async function detectAndApplyTheme(tabId) {
           action: 'applyTheme', 
           theme: theme 
         }).catch(() => {
-          // Sidebar not open, ignore
+          // 侧边栏未打开，忽略
         });
       }
     }
   } catch (error) {
-    console.log('Theme detection skipped:', error.message);
+    console.log('主题检测跳过:', error.message);
   }
 }
 
-// Handle extension icon click to open sidebar
+// 处理扩展图标点击事件 - 打开侧边栏
 chrome.action.onClicked.addListener(async (tab) => {
+  console.log('🖱️ 用户点击了扩展图标');
+  
   try {
     const opened = await openSidePanel(tab.windowId, tab.id);
     
     if (opened) {
-      // Detect theme after opening (non-blocking)
+      console.log('✅ 侧边栏已打开');
+      // 打开后检测主题（非阻塞）
       setTimeout(() => {
         detectAndApplyTheme(tab.id).catch(err => {
-          console.log('Theme detection skipped');
+          console.log('主题检测跳过');
         });
       }, 100);
     } else {
-      console.error('Failed to open sidebar, trying alternative method...');
-      // Fallback: try to activate the tab and open again
+      console.error('❌ 侧边栏打开失败，尝试备用方法...');
+      // 备用方案：激活标签后重试
       await chrome.tabs.update(tab.id, { active: true });
       setTimeout(async () => {
         await openSidePanel(tab.windowId, tab.id);
       }, 100);
     }
   } catch (error) {
-    console.error('Error in icon click handler:', error);
+    console.error('图标点击处理错误:', error);
   }
 });
 
-// Handle keyboard shortcut for saving words
+// 处理键盘快捷键 - 保存单词
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === 'save-word') {
+    console.log('⌨️ 用户按下了保存单词快捷键');
+    
     try {
+      // 1. 获取当前活动标签
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       
       if (!tab || !tab.id) {
-        console.error('No active tab found');
+        console.error('未找到活动标签');
         return;
       }
       
-      console.log('Save word command triggered for tab:', tab.id);
+      console.log('当前标签:', tab.id, tab.url);
       
+      // 2. 获取选中的文本
       const selectionData = await getSelectionData(tab);
 
       if (!selectionData || !selectionData.text) {
-        console.log('No selectable text found in active tab');
+        console.log('未检测到选中的文本');
         await showSelectionWarning('没有检测到可保存的文本，请确认已选中内容或页面允许扩展访问。');
         return;
       }
 
-      console.log('Selected text:', selectionData.text);
+      console.log('选中的文本:', selectionData.text);
       
-      // Save the word
+      // 3. 保存单词
       const word = await saveWord(selectionData);
-      console.log('Word saved successfully:', word);
+      console.log('✅ 单词已保存:', word);
       
-      // Detect theme in parallel (don't wait)
+      // 4. 并行检测主题（不阻塞）
       detectAndApplyTheme(tab.id).catch(err => {
-        console.log('Theme detection skipped:', err.message);
+        console.log('主题检测跳过:', err.message);
       });
       
-      // Get settings to check if auto-open is enabled
+      // 5. 检查是否需要自动打开侧边栏
       const { settings } = await chrome.storage.local.get(['settings']);
       const autoOpen = settings?.autoOpenSidebar !== false;
       
-      console.log('Auto-open sidebar setting:', autoOpen);
+      console.log('自动打开侧边栏设置:', autoOpen);
       
       if (autoOpen) {
-        console.log('Attempting to open sidebar...');
+        console.log('🚪 尝试自动打开侧边栏...');
+        
+        // 先尝试打开一次
         const opened = await openSidePanel(tab.windowId, tab.id);
         
         if (!opened) {
-          console.warn('Failed to open sidebar on first attempt, retrying...');
-          // Retry after a short delay
+          console.warn('⚠️ 第一次尝试失败，200ms后重试...');
+          // 失败后延迟重试
           setTimeout(async () => {
-            await openSidePanel(tab.windowId, tab.id);
+            const retryOpened = await openSidePanel(tab.windowId, tab.id);
+            if (!retryOpened) {
+              console.error('❌ 重试后仍然无法打开侧边栏');
+              // 最后的备用方案：多次快速重试
+              for (let i = 0; i < 3; i++) {
+                await sleep(100);
+                const finalTry = await openSidePanel(tab.windowId, tab.id);
+                if (finalTry) {
+                  console.log('✅ 最终重试成功！');
+                  break;
+                }
+              }
+            }
           }, 200);
+        } else {
+          console.log('✅ 侧边栏已自动打开');
         }
       } else {
-        console.log('Auto-open sidebar is disabled in settings');
+        console.log('自动打开侧边栏功能已禁用');
       }
       
-      // Notify sidebar to show the word
+      // 6. 通知侧边栏显示新保存的单词
       setTimeout(() => {
         chrome.runtime.sendMessage({ 
           action: 'wordSaved', 
           word: word 
         }).catch(err => {
-          console.log('Sidebar not ready for notification');
+          console.log('侧边栏尚未准备好接收通知');
         });
       }, 200);
       
     } catch (error) {
-      console.error('Error in save-word command:', error);
+      console.error('保存单词命令错误:', error);
       await showSelectionWarning(`保存单词时出错: ${error.message}`);
     }
   }
 });
 
-// Save word to storage
+// 保存单词到存储
 async function saveWord(wordData) {
   try {
     const timestamp = Date.now();
@@ -507,18 +542,18 @@ async function saveWord(wordData) {
       reviewed: false
     };
     
-    console.log('Saving word:', word.text);
+    console.log('正在保存单词:', word.text);
     
-    // Get existing words
+    // 获取现有单词列表
     const result = await chrome.storage.local.get(['words']);
     const words = result.words || [];
     
-    // Check if word already exists
+    // 检查单词是否已存在
     const existingIndex = words.findIndex(w => w.text.toLowerCase() === word.text.toLowerCase());
     
     if (existingIndex >= 0) {
-      console.log('Updating existing word');
-      // Update existing word but keep its ID and other data
+      console.log('更新已存在的单词');
+      // 更新已存在的单词，保留其 ID 和其他数据
       words[existingIndex] = { 
         ...words[existingIndex], 
         sentence: word.sentence || words[existingIndex].sentence,
@@ -528,29 +563,29 @@ async function saveWord(wordData) {
       };
       word.id = words[existingIndex].id;
     } else {
-      console.log('Adding new word');
-      // Add new word at the beginning
+      console.log('添加新单词');
+      // 在列表开头添加新单词
       words.unshift(word);
     }
     
-    // Save to storage
+    // 保存到存储
     await chrome.storage.local.set({ words });
-    console.log('Word saved to storage, total words:', words.length);
+    console.log('单词已保存，总单词数:', words.length);
     
     return word;
   } catch (error) {
-    console.error('Error saving word:', error);
+    console.error('保存单词时出错:', error);
     throw error;
   }
 }
 
-// Handle messages from content script and sidebar
+// 处理来自 content script 和 sidebar 的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'saveWord') {
     saveWord(request.data).then(word => {
       sendResponse({ success: true, word });
     });
-    return true; // Keep message channel open for async response
+    return true; // 保持消息通道开放以支持异步响应
   }
   
   if (request.action === 'getWords') {
@@ -570,7 +605,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         await chrome.storage.local.set({ words });
         sendResponse({ success: true });
       } else {
-        sendResponse({ success: false, error: 'Word not found' });
+        sendResponse({ success: false, error: '单词未找到' });
       }
     });
     return true;
@@ -594,11 +629,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Translation function using free translation API
+// 翻译功能（使用免费翻译 API）
 async function translateText(text, targetLang = 'zh-CN') {
   try {
-    // Using Google Translate's unofficial API
-    // Note: For production, consider using official APIs with API keys
+    // 使用 Google 翻译的非官方 API
+    // 注意：生产环境建议使用官方 API 和 API 密钥
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
     
     const response = await fetch(url);
@@ -610,12 +645,12 @@ async function translateText(text, targetLang = 'zh-CN') {
     
     return text;
   } catch (error) {
-    console.error('Translation error:', error);
+    console.error('翻译错误:', error);
     return text;
   }
 }
 
-// Context menu for quick word saving
+// 右键菜单快速保存单词
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'saveToWordGet',
@@ -626,9 +661,9 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === 'saveToWordGet' && info.selectionText) {
+    console.log('🖱️ 用户通过右键菜单保存单词');
+    
     try {
-      console.log('Context menu save triggered');
-      
       let selectionData = null;
       if (tab && tab.id) {
         selectionData = await getSelectionData(tab);
@@ -642,51 +677,51 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       };
 
       if (!wordData.text) {
-        console.log('Context menu triggered without retrievable text');
+        console.log('右键菜单触发但无法获取文本');
         await showSelectionWarning('未能读取选中的文本，请重试。');
         return;
       }
-      
+
       const word = await saveWord(wordData);
-      console.log('Word saved from context menu:', word);
+      console.log('✅ 从右键菜单保存的单词:', word);
       
-      // Detect theme in parallel (don't wait)
+      // 并行检测主题（不阻塞）
       if (tab?.id) {
         detectAndApplyTheme(tab.id).catch(err => {
-          console.log('Theme detection skipped');
+          console.log('主题检测跳过');
         });
       }
       
-      // Get settings
+      // 获取设置
       const { settings } = await chrome.storage.local.get(['settings']);
       const autoOpen = settings?.autoOpenSidebar !== false;
       
-      console.log('Auto-open sidebar setting (context menu):', autoOpen);
+      console.log('自动打开侧边栏设置（右键菜单）:', autoOpen);
       
       if (autoOpen && tab?.windowId && tab?.id) {
-        console.log('Attempting to open sidebar from context menu...');
+        console.log('🚪 尝试从右键菜单打开侧边栏...');
         const opened = await openSidePanel(tab.windowId, tab.id);
         
         if (!opened) {
-          console.warn('Failed to open sidebar, retrying...');
+          console.warn('⚠️ 侧边栏打开失败，重试中...');
           setTimeout(async () => {
             await openSidePanel(tab.windowId, tab.id);
           }, 200);
         }
       }
       
-      // Notify sidebar
+      // 通知侧边栏
       setTimeout(() => {
         chrome.runtime.sendMessage({ 
           action: 'wordSaved', 
           word: word 
         }).catch(err => {
-          console.log('Sidebar not ready for notification');
+          console.log('侧边栏尚未准备好接收通知');
         });
       }, 200);
       
     } catch (error) {
-      console.error('Error saving from context menu:', error);
+      console.error('从右键菜单保存时出错:', error);
       await showSelectionWarning(`保存单词时出错: ${error.message}`);
     }
   }
