@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WordGet 测试页面</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.8;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      color: #667eea;
+      font-size: 2.5em;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    h2 {
+      color: #764ba2;
+      font-size: 1.8em;
+      margin: 30px 0 15px;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+
+    h3 {
+      color: #555;
+      font-size: 1.3em;
+      margin: 20px 0 10px;
+    }
+
+    p {
+      color: #333;
+      font-size: 1.1em;
+      margin-bottom: 15px;
+    }
+
+    .highlight {
+      background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .code {
+      background: #f5f5f5;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      color: #e83e8c;
+      font-size: 0.95em;
+    }
+
+    .instructions {
+      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .instructions strong {
+      color: #667eea;
+      font-size: 1.1em;
+    }
+
+    .example-text {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 15px 0;
+      border-left: 4px solid #764ba2;
+    }
+
+    .shortcuts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .shortcut-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .shortcut-card h4 {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+
+    .shortcut-card .key {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 1.1em;
+      display: inline-block;
+      margin: 5px;
+    }
+
+    .dark-mode-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .dark-mode-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 深色模式 */
+    body.dark-mode {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    }
+
+    body.dark-mode .card {
+      background: #2a2a3e;
+      color: #e0e0e0;
+    }
+
+    body.dark-mode h1 {
+      color: #8b9dc3;
+    }
+
+    body.dark-mode h2 {
+      color: #9d7cb8;
+      border-bottom-color: #8b9dc3;
+    }
+
+    body.dark-mode h3 {
+      color: #b0b0b0;
+    }
+
+    body.dark-mode p {
+      color: #d0d0d0;
+    }
+
+    body.dark-mode .example-text {
+      background: #1a1a2e;
+      border-left-color: #9d7cb8;
+    }
+
+    body.dark-mode .instructions {
+      background: #1a1a2e;
+      border-left-color: #8b9dc3;
+    }
+
+    body.dark-mode .dark-mode-toggle {
+      background: #2a2a3e;
+      color: #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+  <button class="dark-mode-toggle" onclick="toggleDarkMode()">🌓 切换深色模式</button>
+
+  <div class="container">
+    <div class="card">
+      <h1>🎉 Welcome to WordGet Test Page</h1>
+      
+      <div class="instructions">
+        <strong>📖 使用说明：</strong>
+        <p>这是一个专门用于测试 WordGet 扩展功能的页面。请尝试以下操作：</p>
+      </div>
+
+      <div class="shortcuts">
+        <div class="shortcut-card">
+          <h4>💾 保存单词</h4>
+          <div class="key">Alt + S</div>
+          <p style="margin-top: 10px; font-size: 0.9em;">选中单词后按此快捷键保存</p>
+        </div>
+        <div class="shortcut-card">
+          <h4>🌍 查看翻译</h4>
+          <div class="key">Ctrl + Shift + S</div>
+          <p style="margin-top: 10px; font-size: 0.9em;">选中单词后按此快捷键查看翻译</p>
+        </div>
+      </div>
+
+      <h2>Test Vocabulary</h2>
+      
+      <h3>🔰 Basic Words</h3>
+      <p>
+        Try selecting these words: 
+        <span class="highlight">serendipity</span>, 
+        <span class="highlight">ephemeral</span>, 
+        <span class="highlight">resilient</span>, 
+        <span class="highlight">magnificent</span>, 
+        <span class="highlight">enthusiasm</span>
+      </p>
+
+      <h3>📚 Example Sentences</h3>
+      <div class="example-text">
+        <p>
+          <strong>Sentence 1:</strong> The <span class="highlight">metamorphosis</span> of a caterpillar into a butterfly 
+          is one of nature's most remarkable transformations, demonstrating the incredible 
+          <span class="highlight">adaptability</span> of living organisms.
+        </p>
+      </div>
+
+      <div class="example-text">
+        <p>
+          <strong>Sentence 2:</strong> Despite the <span class="highlight">adversity</span> they faced, 
+          the team remained <span class="highlight">optimistic</span> and continued to pursue their 
+          <span class="highlight">ambitious</span> goals with unwavering determination.
+        </p>
+      </div>
+
+      <div class="example-text">
+        <p>
+          <strong>Sentence 3:</strong> The <span class="highlight">intricate</span> design of the ancient temple 
+          reflected the <span class="highlight">sophisticated</span> architectural knowledge of its builders, 
+          who created a structure that has endured for centuries.
+        </p>
+      </div>
+
+      <h3>🎯 Advanced Vocabulary</h3>
+      <p>
+        Challenge yourself with these words: 
+        <span class="highlight">ubiquitous</span>, 
+        <span class="highlight">paradigm</span>, 
+        <span class="highlight">juxtaposition</span>, 
+        <span class="highlight">ephemeral</span>, 
+        <span class="highlight">quintessential</span>
+      </p>
+
+      <h2>How to Test</h2>
+      
+      <div class="instructions">
+        <strong>Step 1:</strong> 测试即时翻译功能
+        <ol style="margin-left: 20px; margin-top: 10px;">
+          <li>选中上面的任意单词或句子</li>
+          <li>按 <span class="code">Ctrl+Shift+S</span></li>
+          <li>观察翻译提示框是否在鼠标位置显示</li>
+          <li>检查提示框颜色是否匹配当前页面主题</li>
+          <li>移动鼠标，确认提示框自动消失</li>
+        </ol>
+      </div>
+
+      <div class="instructions">
+        <strong>Step 2:</strong> 测试保存功能
+        <ol style="margin-left: 20px; margin-top: 10px;">
+          <li>选中一个单词</li>
+          <li>按 <span class="code">Alt+S</span></li>
+          <li>确认单词已保存（应该有通知）</li>
+          <li>检查侧边栏是否自动打开</li>
+          <li>在侧边栏中查看保存的单词详情</li>
+        </ol>
+      </div>
+
+      <div class="instructions">
+        <strong>Step 3:</strong> 测试主题适配
+        <ol style="margin-left: 20px; margin-top: 10px;">
+          <li>点击右上角按钮切换到深色模式</li>
+          <li>选中单词并按 <span class="code">Ctrl+Shift+S</span></li>
+          <li>观察翻译提示框是否变为深色主题</li>
+          <li>确认文字颜色、背景色都适配深色模式</li>
+          <li>切换回浅色模式再测试一次</li>
+        </ol>
+      </div>
+
+      <h2>More Test Content</h2>
+      
+      <p>
+        In the realm of <span class="highlight">technological</span> advancement, 
+        <span class="highlight">innovation</span> plays a pivotal role in shaping our future. 
+        The <span class="highlight">convergence</span> of artificial intelligence and machine learning 
+        has created unprecedented opportunities for solving complex problems.
+      </p>
+
+      <p>
+        The <span class="highlight">sustainable</span> development of our planet requires 
+        <span class="highlight">collaborative</span> efforts from all nations. Environmental 
+        <span class="highlight">conservation</span> is not merely an option but an 
+        <span class="highlight">imperative</span> necessity for ensuring the well-being of future generations.
+      </p>
+
+      <h3>🌟 Try These Phrases</h3>
+      <ul style="margin-left: 40px;">
+        <li><span class="highlight">cutting-edge technology</span></li>
+        <li><span class="highlight">unprecedented opportunities</span></li>
+        <li><span class="highlight">paradigm shift</span></li>
+        <li><span class="highlight">holistic approach</span></li>
+        <li><span class="highlight">synergistic effect</span></li>
+      </ul>
+
+      <h2>Feedback</h2>
+      <p>
+        如果在测试过程中遇到任何问题，请：
+      </p>
+      <ul style="margin-left: 40px;">
+        <li>检查浏览器控制台的日志信息（按 F12）</li>
+        <li>确认扩展已正确加载</li>
+        <li>查看 <span class="code">FEATURES.md</span> 获取详细功能说明</li>
+        <li>参考 <span class="code">QUICKSTART_V2.md</span> 快速上手指南</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      localStorage.setItem('darkMode', isDark);
+    }
+
+    // 恢复用户的主题偏好
+    if (localStorage.getItem('darkMode') === 'true') {
+      document.body.classList.add('dark-mode');
+    }
+  </script>
+</body>
+</html>
