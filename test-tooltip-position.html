@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tooltip 位置诊断测试 - WordGet</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .controls {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .control-group {
+      margin-bottom: 15px;
+    }
+
+    .control-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #333;
+    }
+
+    .control-group button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .control-group button:hover {
+      background: #5568d3;
+    }
+
+    .control-group button.active {
+      background: #48bb78;
+    }
+
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .test-box {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      min-height: 200px;
+      position: relative;
+    }
+
+    .test-box h3 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+
+    .test-box p {
+      line-height: 1.8;
+      color: #555;
+      font-size: 14px;
+    }
+
+    .test-box.corner-top-left { grid-column: 1; grid-row: 1; }
+    .test-box.corner-top-center { grid-column: 2; grid-row: 1; }
+    .test-box.corner-top-right { grid-column: 3; grid-row: 1; }
+    .test-box.corner-middle-left { grid-column: 1; grid-row: 2; }
+    .test-box.corner-middle-center { grid-column: 2; grid-row: 2; }
+    .test-box.corner-middle-right { grid-column: 3; grid-row: 2; }
+    .test-box.corner-bottom-left { grid-column: 1; grid-row: 3; }
+    .test-box.corner-bottom-center { grid-column: 2; grid-row: 3; }
+    .test-box.corner-bottom-right { grid-column: 3; grid-row: 3; }
+
+    .position-label {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #667eea;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .debug-panel {
+      background: #2d3748;
+      color: #e2e8f0;
+      padding: 20px;
+      border-radius: 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 20px;
+    }
+
+    .debug-panel h3 {
+      color: #68d391;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .debug-line {
+      padding: 3px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .debug-line.error {
+      color: #fc8181;
+    }
+
+    .debug-line.success {
+      color: #68d391;
+    }
+
+    .debug-line.info {
+      color: #63b3ed;
+    }
+
+    .highlight {
+      background: #fef5e7;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+
+    .mouse-tracker {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: monospace;
+      pointer-events: none;
+      z-index: 999999;
+    }
+
+    .long-content {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-top: 20px;
+      min-height: 1500px;
+    }
+
+    .long-content h2 {
+      color: #667eea;
+      margin: 30px 0 15px;
+    }
+
+    .long-content p {
+      line-height: 1.8;
+      color: #555;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🔍 Tooltip 位置诊断测试</h1>
+    <p>测试翻译提示框在不同位置的显示效果 | 开启调试模式查看详细信息</p>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label>翻译模式控制</label>
+      <button id="toggleMode" onclick="toggleTranslateMode()">
+        点击开启翻译模式 (或按 Ctrl+Q)
+      </button>
+    </div>
+    <div class="control-group">
+      <label>调试模式</label>
+      <button id="toggleDebug" onclick="toggleDebugMode()">
+        开启调试模式
+      </button>
+    </div>
+  </div>
+
+  <h2 style="margin: 20px 0; color: #333;">📍 位置测试区域</h2>
+  
+  <div class="test-grid">
+    <div class="test-box corner-top-left">
+      <span class="position-label">左上</span>
+      <h3>Top Left Corner</h3>
+      <p>
+        This is a test text in the <span class="highlight">top left corner</span> of the viewport. 
+        Select any English text here to test if the tooltip appears correctly.
+      </p>
+      <p>
+        The tooltip should automatically adjust its position to stay within the viewport boundaries.
+      </p>
+    </div>
+
+    <div class="test-box corner-top-center">
+      <span class="position-label">顶部中央</span>
+      <h3>Top Center</h3>
+      <p>
+        Testing tooltip positioning in the <span class="highlight">top center area</span>.
+        The system should handle boundary detection intelligently.
+      </p>
+      <p>
+        Machine learning algorithms can identify patterns in data automatically.
+      </p>
+    </div>
+
+    <div class="test-box corner-top-right">
+      <span class="position-label">右上</span>
+      <h3>Top Right Corner</h3>
+      <p>
+        This section tests the <span class="highlight">top right corner</span> behavior.
+        Tooltip should appear on the left side when near the right edge.
+      </p>
+      <p>
+        Natural language processing enables computers to understand human language.
+      </p>
+    </div>
+
+    <div class="test-box corner-middle-left">
+      <span class="position-label">中左</span>
+      <h3>Middle Left</h3>
+      <p>
+        The <span class="highlight">middle left section</span> provides a typical use case scenario.
+        Most tooltips should appear on the right side here.
+      </p>
+      <p>
+        Deep learning uses neural networks to solve complex problems efficiently.
+      </p>
+    </div>
+
+    <div class="test-box corner-middle-center">
+      <span class="position-label">中央</span>
+      <h3>Center Area</h3>
+      <p>
+        The <span class="highlight">center of the viewport</span> is the most common selection area.
+        Tooltip positioning should work perfectly here.
+      </p>
+      <p>
+        Artificial intelligence is transforming industries across the globe today.
+      </p>
+    </div>
+
+    <div class="test-box corner-middle-right">
+      <span class="position-label">中右</span>
+      <h3>Middle Right</h3>
+      <p>
+        Testing the <span class="highlight">middle right area</span> for edge case handling.
+        Expect tooltips to appear on the left when too close to edge.
+      </p>
+      <p>
+        Computer vision algorithms can recognize objects in images accurately.
+      </p>
+    </div>
+
+    <div class="test-box corner-bottom-left">
+      <span class="position-label">左下</span>
+      <h3>Bottom Left Corner</h3>
+      <p>
+        The <span class="highlight">bottom left corner</span> tests vertical boundary detection.
+        Tooltips should appear above the selection when near bottom.
+      </p>
+      <p>
+        Reinforcement learning agents learn through trial and error mechanisms.
+      </p>
+    </div>
+
+    <div class="test-box corner-bottom-center">
+      <span class="position-label">底部中央</span>
+      <h3>Bottom Center</h3>
+      <p>
+        Testing <span class="highlight">bottom center positioning</span> logic here.
+        This is crucial for long page scenarios.
+      </p>
+      <p>
+        Data science combines statistics and programming for insights extraction.
+      </p>
+    </div>
+
+    <div class="test-box corner-bottom-right">
+      <span class="position-label">右下</span>
+      <h3>Bottom Right Corner</h3>
+      <p>
+        The <span class="highlight">bottom right corner</span> is the most challenging position.
+        Tooltip must appear above and to the left of selection.
+      </p>
+      <p>
+        Neural networks can approximate any continuous function given enough data.
+      </p>
+    </div>
+  </div>
+
+  <div class="long-content">
+    <h2>📜 Long Content Scrolling Test</h2>
+    <p>
+      This section extends the page vertically to test <span class="highlight">tooltip positioning during scrolling</span>.
+      Select text at different scroll positions to verify that the tooltip always appears in the correct location.
+    </p>
+
+    <h2>Understanding Machine Learning</h2>
+    <p>
+      Machine learning is a subset of artificial intelligence that focuses on the development of algorithms 
+      and statistical models. These models enable computers to improve their performance on tasks through 
+      experience and data, without being explicitly programmed for each specific task.
+    </p>
+    <p>
+      The fundamental principle behind machine learning is pattern recognition. By analyzing large datasets, 
+      algorithms can identify patterns and relationships that might not be immediately apparent to human observers.
+      This capability has led to breakthroughs in various fields including computer vision, natural language 
+      processing, and predictive analytics.
+    </p>
+
+    <h2>Deep Learning Revolution</h2>
+    <p>
+      Deep learning, a specialized branch of machine learning, uses neural networks with multiple layers to 
+      process complex patterns in data. This approach has revolutionized fields such as image recognition, 
+      speech processing, and language translation. The success of deep learning models depends heavily on 
+      the availability of large datasets and powerful computational resources.
+    </p>
+    <p>
+      Convolutional Neural Networks (CNNs) have become the standard architecture for computer vision tasks, 
+      while Recurrent Neural Networks (RNNs) and Transformers dominate natural language processing applications.
+      These architectures can learn hierarchical representations of data, extracting increasingly abstract 
+      features at deeper layers.
+    </p>
+
+    <h2>Practical Applications</h2>
+    <p>
+      The practical applications of machine learning are vast and growing. In healthcare, ML models assist 
+      in disease diagnosis and drug discovery. In finance, they power fraud detection and algorithmic trading 
+      systems. In retail, recommendation engines personalize shopping experiences for millions of users.
+    </p>
+    <p>
+      Autonomous vehicles rely on machine learning for object detection, path planning, and decision making.
+      Virtual assistants use natural language understanding to interpret and respond to user queries. 
+      These real-world applications demonstrate the transformative potential of machine learning technologies.
+    </p>
+
+    <h2>Future Directions</h2>
+    <p>
+      As we look toward the future, several trends are emerging in machine learning research. Transfer learning 
+      allows models trained on one task to be adapted for related tasks with minimal additional training. 
+      Few-shot learning aims to enable models to learn from very small datasets, mimicking human learning capabilities.
+    </p>
+    <p>
+      Explainable AI is becoming increasingly important as ML systems are deployed in critical applications.
+      Researchers are developing methods to make model predictions more interpretable and transparent. 
+      Additionally, federated learning enables training on decentralized data while preserving privacy, 
+      opening new possibilities for collaborative machine learning.
+    </p>
+  </div>
+
+  <div class="debug-panel" id="debugPanel">
+    <h3>🐛 调试信息面板</h3>
+    <div id="debugContent">
+      <div class="debug-line info">等待操作...</div>
+    </div>
+  </div>
+
+  <div class="mouse-tracker" id="mouseTracker">
+    鼠标位置: (0, 0)<br>
+    视口: 0 x 0
+  </div>
+
+  <script>
+    let debugMode = false;
+    let translateMode = false;
+
+    // 鼠标位置追踪
+    const tracker = document.getElementById('mouseTracker');
+    document.addEventListener('mousemove', (e) => {
+      tracker.innerHTML = `
+        鼠标位置: (${e.clientX}, ${e.clientY})<br>
+        视口: ${window.innerWidth} x ${window.innerHeight}<br>
+        滚动: ${window.scrollY}px
+      `;
+    });
+
+    // 调试模式切换
+    function toggleDebugMode() {
+      debugMode = !debugMode;
+      window.wordgetDebug = debugMode;
+      
+      const btn = document.getElementById('toggleDebug');
+      if (debugMode) {
+        btn.textContent = '关闭调试模式';
+        btn.classList.add('active');
+        addDebugLog('✅ 调试模式已开启', 'success');
+      } else {
+        btn.textContent = '开启调试模式';
+        btn.classList.remove('active');
+        addDebugLog('❌ 调试模式已关闭', 'info');
+      }
+    }
+
+    // 翻译模式切换
+    function toggleTranslateMode() {
+      // 发送消息给扩展
+      chrome.runtime.sendMessage({ 
+        action: 'toggleTranslateMode' 
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          addDebugLog('❌ 无法连接到扩展: ' + chrome.runtime.lastError.message, 'error');
+          return;
+        }
+        
+        translateMode = !translateMode;
+        const btn = document.getElementById('toggleMode');
+        if (translateMode) {
+          btn.textContent = '关闭翻译模式';
+          btn.classList.add('active');
+          addDebugLog('✅ 翻译模式已开启', 'success');
+        } else {
+          btn.textContent = '开启翻译模式';
+          btn.classList.remove('active');
+          addDebugLog('❌ 翻译模式已关闭', 'info');
+        }
+      });
+    }
+
+    // 添加调试日志
+    function addDebugLog(message, type = 'info') {
+      const debugContent = document.getElementById('debugContent');
+      const line = document.createElement('div');
+      line.className = `debug-line ${type}`;
+      const timestamp = new Date().toLocaleTimeString();
+      line.textContent = `[${timestamp}] ${message}`;
+      debugContent.appendChild(line);
+      
+      // 保持最多100条日志
+      while (debugContent.children.length > 100) {
+        debugContent.removeChild(debugContent.firstChild);
+      }
+      
+      // 滚动到底部
+      debugContent.parentElement.scrollTop = debugContent.parentElement.scrollHeight;
+    }
+
+    // 监听选择事件
+    document.addEventListener('mouseup', (e) => {
+      const selection = window.getSelection();
+      const text = selection.toString().trim();
+      
+      if (text && debugMode) {
+        addDebugLog(`📝 选中文本: "${text.substring(0, 30)}${text.length > 30 ? '...' : ''}"`, 'info');
+        addDebugLog(`📍 选择位置: (${e.clientX}, ${e.clientY})`, 'info');
+      }
+    });
+
+    // 监听控制台
+    const originalLog = console.log;
+    console.log = function(...args) {
+      originalLog.apply(console, args);
+      if (debugMode && args[0] && typeof args[0] === 'string' && args[0].includes('[WordGet]')) {
+        addDebugLog(args.join(' '), 'info');
+      }
+    };
+
+    const originalError = console.error;
+    console.error = function(...args) {
+      originalError.apply(console, args);
+      if (debugMode) {
+        addDebugLog('❌ ' + args.join(' '), 'error');
+      }
+    };
+
+    // 页面加载完成
+    window.addEventListener('load', () => {
+      addDebugLog('✅ 测试页面已加载', 'success');
+      addDebugLog('ℹ️  按 Ctrl+Q 开启翻译模式，或点击上方按钮', 'info');
+      addDebugLog('ℹ️  开启调试模式查看详细日志', 'info');
+    });
+
+    // 监听tooltip创建
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.id === 'wordget-translation-tooltip') {
+            const style = getComputedStyle(node);
+            addDebugLog(`🎯 Tooltip已创建`, 'success');
+            addDebugLog(`   位置: left=${node.style.left}, top=${node.style.top}`, 'info');
+            addDebugLog(`   定位: ${style.position}, z-index=${style.zIndex}`, 'info');
+          }
+        });
+      });
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  </script>
+</body>
+</html>

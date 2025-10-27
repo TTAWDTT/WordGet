@@ -353,7 +353,7 @@ function findShadowRoot(element) {
 }
 
 async function processAutomaticTranslation({ text, sentence, pointer }) {
-  debugLog('开始处理自动翻译:', { text, sentence });
+  debugLog('开始处理自动翻译:', { text, sentence, pointer });
   
   if (!translateModeActive || !text) {
     debugLog('翻译模式未激活或文本为空');
@@ -383,11 +383,14 @@ async function processAutomaticTranslation({ text, sentence, pointer }) {
   const cleanSentence = (sentence && sentence.trim()) || text;
   const limitedSentence = cleanSentence.length > 500 ? cleanSentence.slice(0, 500) : cleanSentence;
 
-  const pointerX = pointer?.x ?? lastMousePosition.x;
-  const pointerY = pointer?.y ?? lastMousePosition.y;
+  // 确保坐标值有效，如果无效则使用最后记录的鼠标位置
+  const pointerX = (typeof pointer?.x === 'number' && !isNaN(pointer.x)) ? pointer.x : lastMousePosition.x;
+  const pointerY = (typeof pointer?.y === 'number' && !isNaN(pointer.y)) ? pointer.y : lastMousePosition.y;
 
-  debugLog('显示加载状态');
+  debugLog('使用坐标:', { x: pointerX, y: pointerY });
+
   // 显示加载状态
+  debugLog('显示加载状态');
   tooltipInstance.show({
     word: text,
     wordTranslation: '⏳ 翻译中...',
