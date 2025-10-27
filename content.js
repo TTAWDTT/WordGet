@@ -1,7 +1,5 @@
 // WordGet 的内容脚本 - 处理文本选择和上下文提取
 
-console.log('WordGet content script 已加载于:', window.location.href);
-
 // 动态导入模块
 let ThemeDetector, TooltipUI, Translator;
 let tooltipInstance = null;
@@ -33,10 +31,8 @@ let modeIndicator = null;
     
     // 检测并应用当前页面主题
     await detectAndApplyPageTheme();
-    
-    console.log('✅ 模块初始化完成');
   } catch (error) {
-    console.error('❌ 模块初始化失败:', error);
+    console.error('❌ WordGet 模块初始化失败:', error);
   }
 })();
 
@@ -50,7 +46,6 @@ async function detectAndApplyPageTheme() {
     
     if (tooltipInstance && currentTheme) {
       tooltipInstance.setTheme(currentTheme);
-      console.log('🎨 页面主题已应用:', currentTheme);
     }
   } catch (error) {
     console.error('主题检测失败:', error);
@@ -67,14 +62,10 @@ document.addEventListener('mousemove', (e) => {
 
 // 监听来自后台脚本的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('Content script 收到消息:', request.action);
-  
   if (request.action === 'getSelection') {
     try {
       const selection = window.getSelection();
       const selectedText = selection.toString().trim();
-      
-      console.log('选中的文本:', selectedText);
       
       if (selectedText) {
         const sentence = extractSentence(selection);
@@ -86,13 +77,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           pageTitle: document.title
         };
         
-        console.log('发送响应:', response);
         sendResponse(response);
         
         // 显示视觉反馈
         showSavedNotification(selectedText);
       } else {
-        console.log('没有选中文本');
         sendResponse({ text: '' });
       }
     } catch (error) {
@@ -221,8 +210,6 @@ function attachListenerToShadowRoot(shadowRoot) {
   const listener = (event) => handleTranslateMouseUp(event);
   shadowRoot.addEventListener('mouseup', listener, true);
   shadowRootListeners.set(shadowRoot, listener);
-  
-  console.log('✅ Shadow DOM 监听器已附加');
 }
 
 // 移除所有 Shadow DOM 监听器
@@ -271,7 +258,6 @@ function observeShadowDOMCreation() {
   });
   
   window.wordgetShadowObserver = observer;
-  console.log('✅ Shadow DOM 创建监听器已启动');
 }
 
 function handleTranslateMouseUp(event) {
@@ -295,7 +281,6 @@ function handleTranslateMouseUp(event) {
       if (shadowRoot) {
         selection = shadowRoot.getSelection?.() || window.getSelection();
         selectedText = selection?.toString().trim() || '';
-        console.log('📦 从 Shadow DOM 获取选择:', selectedText);
       }
     }
     
@@ -305,7 +290,6 @@ function handleTranslateMouseUp(event) {
         if (document.activeElement.contentWindow) {
           selection = document.activeElement.contentWindow.getSelection();
           selectedText = selection?.toString().trim() || '';
-          console.log('🖼️ 从 iframe 获取选择:', selectedText);
         }
       } catch (e) {
         // Cross-origin iframe, 忽略
@@ -317,7 +301,6 @@ function handleTranslateMouseUp(event) {
     }
 
     if (selectedText.length > 5000) {
-      console.log('选中的文本过长，跳过翻译');
       return;
     }
 
@@ -641,8 +624,6 @@ function isPDFViewer() {
 
 // PDF 增强选择
 if (isPDFViewer()) {
-  console.log('检测到 PDF 查看器，启用 PDF 支持');
-  
   // PDF.js 特定处理
   document.addEventListener('mouseup', () => {
     const selection = window.getSelection();
