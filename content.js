@@ -1,5 +1,13 @@
 // WordGet 的内容脚本 - 处理文本选择和上下文提取
 
+// 调试模式（可以在控制台设置 window.wordgetDebug = true 来启用）
+const isDebugMode = () => window.wordgetDebug === true;
+const debugLog = (...args) => {
+  if (isDebugMode()) {
+    console.log('[WordGet]', ...args);
+  }
+};
+
 // 动态导入模块
 let ThemeDetector, TooltipUI, Translator;
 let tooltipInstance = null;
@@ -14,23 +22,31 @@ let modeIndicator = null;
 // 初始化模块
 (async function initModules() {
   try {
+    debugLog('开始初始化模块...');
+    
     // 导入主题检测模块
     const themeModule = await import(chrome.runtime.getURL('modules/theme-detector.js'));
     ThemeDetector = themeModule.ThemeDetector;
+    debugLog('✅ 主题检测模块已加载');
     
   // 导入悬浮提示UI模块
   const tooltipModule = await import(chrome.runtime.getURL('modules/tooltip-ui.js'));
   TooltipUI = tooltipModule.TooltipUI;
+  debugLog('✅ 提示框UI模块已加载');
 
   // 导入翻译模块
   const translatorModule = await import(chrome.runtime.getURL('modules/translator.js'));
   Translator = translatorModule.Translator;
+  debugLog('✅ 翻译模块已加载');
     
     // 初始化提示框实例
     tooltipInstance = new TooltipUI();
+    debugLog('✅ 提示框实例已创建');
     
     // 检测并应用当前页面主题
     await detectAndApplyPageTheme();
+    
+    debugLog('✅ 所有模块初始化完成');
   } catch (error) {
     console.error('❌ WordGet 模块初始化失败:', error);
   }
@@ -337,7 +353,10 @@ function findShadowRoot(element) {
 }
 
 async function processAutomaticTranslation({ text, sentence, pointer }) {
+  debugLog('开始处理自动翻译:', { text, sentence });
+  
   if (!translateModeActive || !text) {
+    debugLog('翻译模式未激活或文本为空');
     return;
   }
 
@@ -355,6 +374,7 @@ async function processAutomaticTranslation({ text, sentence, pointer }) {
 
   const now = Date.now();
   if (text === lastTranslateTrigger.text && now - lastTranslateTrigger.timestamp < 400) {
+    debugLog('跳过重复翻译');
     return;
   }
 
@@ -366,6 +386,7 @@ async function processAutomaticTranslation({ text, sentence, pointer }) {
   const pointerX = pointer?.x ?? lastMousePosition.x;
   const pointerY = pointer?.y ?? lastMousePosition.y;
 
+  debugLog('显示加载状态');
   // 显示加载状态
   tooltipInstance.show({
     word: text,
@@ -377,16 +398,20 @@ async function processAutomaticTranslation({ text, sentence, pointer }) {
   });
 
   try {
+    debugLog('正在调用翻译API...');
     const translations = await Translator.translateWordAndSentence(text, limitedSentence, 'zh-CN');
+    debugLog('翻译完成:', translations);
     
     // 检查是否还在翻译模式且文本未变化
     if (!translateModeActive || lastTranslateTrigger.text !== text) {
+      debugLog('模式已关闭或文本已变化，取消显示');
       return;
     }
     
     const wordTranslation = translations.wordTranslation || text;
     const sentenceTranslation = translations.sentenceTranslation || translations.wordTranslation;
 
+    debugLog('显示翻译结果');
     tooltipInstance.show({
       word: text,
       wordTranslation,
@@ -403,6 +428,7 @@ async function processAutomaticTranslation({ text, sentence, pointer }) {
       ? '⏱️ 翻译超时，请重试'
       : '❌ 翻译失败，请检查网络';
 
+    debugLog('显示错误信息:', errorMessage);
     if (tooltipInstance) {
       tooltipInstance.show({
         word: text,
