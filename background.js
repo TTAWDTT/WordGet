@@ -523,6 +523,62 @@ chrome.commands.onCommand.addListener(async (command) => {
       await showSelectionWarning(`保存单词时出错: ${error.message}`);
     }
   }
+  
+  // 新增：翻译显示命令
+  if (command === 'translate-word') {
+    console.log('🌍 用户按下了翻译显示快捷键');
+    
+    try {
+      // 1. 获取当前活动标签
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      if (!tab || !tab.id) {
+        console.error('未找到活动标签');
+        return;
+      }
+      
+      console.log('当前标签:', tab.id, tab.url);
+      
+      // 2. 获取选中的文本
+      const selectionData = await getSelectionData(tab);
+
+      if (!selectionData || !selectionData.text) {
+        console.log('未检测到选中的文本');
+        await showSelectionWarning('没有检测到文本，请确认已选中内容。');
+        return;
+      }
+
+      console.log('准备翻译:', selectionData.text);
+      
+      // 3. 翻译单词和句子（并行）
+      const [wordTranslation, sentenceTranslation] = await Promise.all([
+        translateText(selectionData.text, 'zh-CN'),
+        selectionData.sentence ? translateText(selectionData.sentence, 'zh-CN') : Promise.resolve('')
+      ]);
+      
+      console.log('翻译完成 - 单词:', wordTranslation, '句子:', sentenceTranslation);
+      
+      // 4. 发送给 content script 显示
+      try {
+        await chrome.tabs.sendMessage(tab.id, {
+          action: 'showTranslation',
+          word: selectionData.text,
+          wordTranslation: wordTranslation,
+          sentence: selectionData.sentence,
+          sentenceTranslation: sentenceTranslation
+        });
+        
+        console.log('✅ 翻译提示已发送到页面');
+      } catch (error) {
+        console.error('发送翻译提示失败:', error);
+        await showSelectionWarning('无法显示翻译，页面可能未准备好。');
+      }
+      
+    } catch (error) {
+      console.error('翻译命令错误:', error);
+      await showSelectionWarning(`翻译时出错: ${error.message}`);
+    }
+  }
 });
 
 // 保存单词到存储
