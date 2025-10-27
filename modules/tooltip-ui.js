@@ -7,8 +7,10 @@ export class TooltipUI {
   constructor() {
     this.tooltip = null;
     this.theme = null;
+    this.hideTimer = null;
     this.mouseMoveBound = this.handleMouseMove.bind(this);
     this.clickBound = this.handleClick.bind(this);
+    console.log('TooltipUI constructor called');
   }
 
   /**
@@ -17,6 +19,10 @@ export class TooltipUI {
    */
   setTheme(theme) {
     this.theme = theme;
+    console.log('TooltipUI theme set:', theme);
+    if (this.tooltip) {
+      this.applyThemeStyles();
+    }
   }
 
   /**
@@ -24,82 +30,62 @@ export class TooltipUI {
    * @returns {HTMLElement} 提示框元素
    */
   createTooltipElement() {
+    console.log('Creating tooltip element...');
     const tooltip = document.createElement('div');
     tooltip.id = 'wordget-translation-tooltip';
     tooltip.className = 'wordget-tooltip';
-    
-    // 应用主题样式
     this.applyThemeStyles(tooltip);
-    
     return tooltip;
   }
 
   /**
    * 应用主题样式到提示框
-   * @param {HTMLElement} element - 提示框元素
+   * @param {HTMLElement} [element=this.tooltip] - 提示框元素
    */
-  applyThemeStyles(element) {
+  applyThemeStyles(element = this.tooltip) {
+    if (!element) return;
+
+    console.log('Applying theme styles...');
     const isDark = this.theme?.isDark || false;
+    
+    if (isDark) {
+      element.classList.add('dark-theme');
+    } else {
+      element.classList.remove('dark-theme');
+    }
+
+    // 使用 CSS 变量来设置颜色
     const primary = this.theme?.primary || (isDark ? '#8b9dc3' : '#667eea');
-    const secondary = this.theme?.secondary || (isDark ? '#9d7cb8' : '#764ba2');
-    
-    const bgColor = isDark ? '#1e1e1e' : '#ffffff';
-    const textColor = isDark ? '#e0e0e0' : '#333333';
-    const borderColor = isDark ? '#404040' : '#e0e0e0';
-    const shadowColor = isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.15)';
-    
-    element.style.cssText = `
-      position: absolute;
-      z-index: 999999;
-      background: linear-gradient(135deg, ${bgColor} 0%, ${bgColor} 100%);
-      border: 1px solid ${borderColor};
-      border-left: 3px solid ${primary};
-      border-radius: 8px;
-      padding: 12px 16px;
-      box-shadow: 0 4px 20px ${shadowColor};
-      color: ${textColor};
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      font-size: 14px;
-      line-height: 1.6;
-      max-width: 400px;
-      min-width: 200px;
-      pointer-events: none;
-      opacity: 0;
-      transform: translateY(-5px);
-      transition: opacity 0.2s ease, transform 0.2s ease;
-      backdrop-filter: blur(10px);
-    `;
+    element.style.setProperty('--wordget-primary-color', primary);
   }
 
   /**
    * 显示翻译提示
    * @param {Object} params - 参数对象
-   * @param {string} params.word - 单词
-   * @param {string} params.wordTranslation - 单词翻译
-   * @param {string} params.sentence - 句子（可选）
-   * @param {string} params.sentenceTranslation - 句子翻译（可选）
-   * @param {number} params.x - 鼠标 X 坐标
-   * @param {number} params.y - 鼠标 Y 坐标
    */
   show({ word, wordTranslation, sentence, sentenceTranslation, x, y }) {
-    // 移除已存在的提示框
-    this.hide();
-
-    // 创建新提示框
-    this.tooltip = this.createTooltipElement();
+    console.log('TooltipUI show called with:', { word, x, y });
+    
+    // 如果提示框不存在，则创建
+    if (!this.tooltip) {
+      this.tooltip = this.createTooltipElement();
+      document.body.appendChild(this.tooltip);
+      console.log('Tooltip element appended to body.');
+    } else {
+      // 如果已存在，确保主题最新
+      this.applyThemeStyles();
+    }
     
     // 构建 HTML 内容
     const isDark = this.theme?.isDark || false;
     const accent = this.theme?.accent || (isDark ? '#68d391' : '#48bb78');
-    const mutedColor = isDark ? '#888888' : '#666666';
-    const dividerColor = isDark ? '#333333' : '#eeeeee';
     
     let html = `
-      <div style="margin-bottom: 8px;">
-        <div style="font-weight: 600; color: ${accent}; font-size: 15px; margin-bottom: 4px;">
+      <div class="wordget-tooltip-word-container">
+        <div class="wordget-tooltip-word" style="color: ${accent};">
           ${this.escapeHtml(word)}
         </div>
-        <div style="color: ${this.theme?.primary || '#667eea'}; font-size: 13px;">
+        <div class="wordget-tooltip-translation">
           ${this.escapeHtml(wordTranslation)}
         </div>
       </div>
@@ -107,14 +93,12 @@ export class TooltipUI {
     
     if (sentence && sentenceTranslation) {
       html += `
-        <div style="border-top: 1px solid ${dividerColor}; margin: 8px 0; padding-top: 8px;">
-          <div style="font-size: 12px; color: ${mutedColor}; margin-bottom: 4px;">
-            例句：
-          </div>
-          <div style="font-size: 12px; font-style: italic; margin-bottom: 4px; color: ${mutedColor};">
+        <div class="wordget-tooltip-sentence-container">
+          <div class="wordget-tooltip-sentence-label">例句：</div>
+          <div class="wordget-tooltip-sentence-original">
             ${this.escapeHtml(sentence)}
           </div>
-          <div style="font-size: 12px; color: ${this.theme?.text || '#333333'};">
+          <div class="wordget-tooltip-sentence-translation">
             ${this.escapeHtml(sentenceTranslation)}
           </div>
         </div>
@@ -123,76 +107,82 @@ export class TooltipUI {
     
     this.tooltip.innerHTML = html;
     
-    // 添加到页面
-    document.body.appendChild(this.tooltip);
+    // 计算位置
+    this.updatePosition(x, y);
     
-    // 计算位置（避免超出视口）
+    // 触发显示动画
+    requestAnimationFrame(() => {
+      if (this.tooltip) {
+        this.tooltip.classList.add('visible');
+        console.log('Tooltip "visible" class added.');
+      }
+    });
+    
+    // 移除旧的监听器并添加新的
+    document.removeEventListener('mousemove', this.mouseMoveBound);
+    document.removeEventListener('click', this.clickBound, true);
+    document.addEventListener('mousemove', this.mouseMoveBound);
+    document.addEventListener('click', this.clickBound, true);
+  }
+
+  /**
+   * 更新提示框位置
+   */
+  updatePosition(x, y) {
+    if (!this.tooltip) return;
+
     const rect = this.tooltip.getBoundingClientRect();
-    let left = x + 10;
-    let top = y + 10;
+    let left = x + 15;
+    let top = y + 15;
     
-    // 水平边界检查
-    if (left + rect.width > window.innerWidth) {
-      left = x - rect.width - 10;
+    if (left + rect.width > window.innerWidth - 10) {
+      left = x - rect.width - 15;
+    }
+    if (top + rect.height > window.innerHeight - 10) {
+      top = y - rect.height - 15;
     }
     
-    // 垂直边界检查
-    if (top + rect.height > window.innerHeight) {
-      top = y - rect.height - 10;
-    }
-    
-    // 确保不超出左上边界
     left = Math.max(10, left);
     top = Math.max(10, top);
     
     this.tooltip.style.left = `${left}px`;
     this.tooltip.style.top = `${top}px`;
-    
-    // 触发动画
-    requestAnimationFrame(() => {
-      if (this.tooltip) {
-        this.tooltip.style.opacity = '1';
-        this.tooltip.style.transform = 'translateY(0)';
-      }
-    });
-    
-    // 监听鼠标移动和点击事件
-    document.addEventListener('mousemove', this.mouseMoveBound);
-    document.addEventListener('click', this.clickBound);
   }
 
   /**
    * 隐藏提示框
    */
   hide() {
+    if (this.hideTimer) {
+      clearTimeout(this.hideTimer);
+      this.hideTimer = null;
+    }
     if (this.tooltip) {
-      // 先淡出
-      this.tooltip.style.opacity = '0';
-      this.tooltip.style.transform = 'translateY(-5px)';
+      console.log('Hiding tooltip...');
+      this.tooltip.classList.remove('visible');
       
-      // 延迟移除
-      setTimeout(() => {
+      // 动画结束后可以安全移除
+      this.hideTimer = setTimeout(() => {
         if (this.tooltip && this.tooltip.parentNode) {
           this.tooltip.parentNode.removeChild(this.tooltip);
+          this.tooltip = null;
+          console.log('Tooltip element removed from DOM.');
         }
-        this.tooltip = null;
-      }, 200);
+      }, 300);
     }
     
-    // 移除事件监听
     document.removeEventListener('mousemove', this.mouseMoveBound);
-    document.removeEventListener('click', this.clickBound);
+    document.removeEventListener('click', this.clickBound, true);
   }
 
   /**
-   * 处理鼠标移动（隐藏提示框）
+   * 处理鼠标移动（如果离得远则隐藏提示框）
    */
   handleMouseMove(event) {
-    // 检查鼠标是否移动了一定距离
     if (!this.tooltip) return;
     
     const rect = this.tooltip.getBoundingClientRect();
-    const buffer = 20; // 缓冲区，鼠标在提示框附近不会隐藏
+    const buffer = 30;
     
     const isNearTooltip = (
       event.clientX >= rect.left - buffer &&
@@ -202,33 +192,21 @@ export class TooltipUI {
     );
     
     if (!isNearTooltip) {
-      // 延迟隐藏，避免误触
-      if (this.hideTimer) {
-        clearTimeout(this.hideTimer);
-      }
-      this.hideTimer = setTimeout(() => {
-        this.hide();
-      }, 200);
-    } else {
-      // 在提示框附近，取消隐藏
-      if (this.hideTimer) {
-        clearTimeout(this.hideTimer);
-        this.hideTimer = null;
-      }
+      this.hide();
     }
   }
 
   /**
    * 处理点击（隐藏提示框）
    */
-  handleClick() {
-    this.hide();
+  handleClick(event) {
+    if (this.tooltip && !this.tooltip.contains(event.target)) {
+      this.hide();
+    }
   }
 
   /**
    * 转义 HTML 特殊字符
-   * @param {string} text - 要转义的文本
-   * @returns {string} 转义后的文本
    */
   escapeHtml(text) {
     const div = document.createElement('div');

@@ -26,15 +26,23 @@
 
 /* 翻译提示框样式 */
 .wordget-tooltip {
+  --wordget-bg-color: #ffffff;
+  --wordget-text-color: #333333;
+  --wordget-border-color: #e0e0e0;
+  --wordget-shadow-color: rgba(0, 0, 0, 0.15);
+  --wordget-primary-color: #667eea;
+  --wordget-muted-color: #666666;
+  --wordget-divider-color: #eeeeee;
+
   position: absolute;
-  z-index: 999999;
-  background: #ffffff;
-  border: 1px solid #e0e0e0;
-  border-left: 3px solid #667eea;
+  z-index: 2147483647;
+  background: var(--wordget-bg-color);
+  border: 1px solid var(--wordget-border-color);
+  border-left: 3px solid var(--wordget-primary-color);
   border-radius: 8px;
   padding: 12px 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  color: #333333;
+  box-shadow: 0 4px 20px var(--wordget-shadow-color);
+  color: var(--wordget-text-color);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 14px;
   line-height: 1.6;
@@ -42,14 +50,64 @@
   min-width: 200px;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(-5px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform: translateY(10px) scale(0.95);
+  transition: opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   backdrop-filter: blur(10px);
+}
+
+.wordget-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* 深色主题 */
+.wordget-tooltip.dark-theme {
+  --wordget-bg-color: #2a2a2a;
+  --wordget-text-color: #e0e0e0;
+  --wordget-border-color: #404040;
+  --wordget-shadow-color: rgba(0, 0, 0, 0.8);
+  --wordget-muted-color: #888888;
+  --wordget-divider-color: #444444;
+}
+
+/* 提示框内部结构 */
+.wordget-tooltip-word-container {
+  margin-bottom: 8px;
+}
+.wordget-tooltip-word {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+.wordget-tooltip-translation {
+  color: var(--wordget-primary-color);
+  font-size: 14px;
+}
+
+.wordget-tooltip-sentence-container {
+  border-top: 1px solid var(--wordget-divider-color);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.wordget-tooltip-sentence-label {
+  font-size: 12px;
+  color: var(--wordget-muted-color);
+  margin-bottom: 4px;
+}
+.wordget-tooltip-sentence-original {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--wordget-muted-color);
+  margin-bottom: 4px;
+}
+.wordget-tooltip-sentence-translation {
+  font-size: 12px;
+  color: var(--wordget-text-color);
 }
 
 #wordget-translation-tooltip {
   position: absolute;
-  z-index: 999999;
+  z-index: 2147483647;
 }
 
 .wordget-translate-indicator {
