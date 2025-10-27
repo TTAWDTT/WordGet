@@ -93,6 +93,81 @@ const themeAdapter = {
   }
 };
 
+// 通用延迟函数
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// 翻译阅读模式状态（按标签页跟踪）
+const translateModeTabs = new Set();
+
+async function updateTranslateModeBadge(tabId, enabled) {
+  if (!chrome.action || typeof chrome.action.setBadgeText !== 'function') {
+    return;
+  }
+
+  try {
+    await chrome.action.setBadgeBackgroundColor({ tabId, color: '#2563eb' });
+    await chrome.action.setBadgeText({ tabId, text: enabled ? 'T' : '' });
+  } catch (error) {
+    console.log('更新翻译模式徽章失败:', error.message);
+  }
+}
+
+async function sendTranslateModeState(tabId, active, reason = 'manual') {
+  try {
+    await chrome.tabs.sendMessage(tabId, {
+      action: 'toggleTranslateMode',
+      active,
+      reason
+    });
+    return true;
+  } catch (error) {
+    console.log('发送翻译模式消息失败，尝试注入脚本:', error.message);
+
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['content.js']
+      });
+      await chrome.scripting.insertCSS({
+        target: { tabId },
+        files: ['content.css']
+      });
+
+      await sleep(80);
+
+      await chrome.tabs.sendMessage(tabId, {
+        action: 'toggleTranslateMode',
+        active,
+        reason
+      });
+      return true;
+    } catch (injectError) {
+      console.error('无法注入翻译模式脚本:', injectError.message);
+      return false;
+    }
+  }
+}
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  translateModeTabs.delete(tabId);
+});
+
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
+  if (changeInfo.status === 'complete' && translateModeTabs.has(tabId)) {
+    const success = await sendTranslateModeState(tabId, true, 'restore');
+    if (!success) {
+      translateModeTabs.delete(tabId);
+      await updateTranslateModeBadge(tabId, false);
+    } else {
+      await updateTranslateModeBadge(tabId, true);
+    }
+  }
+});
+
+chrome.tabs.onActivated.addListener((activeInfo) => {
+  updateTranslateModeBadge(activeInfo.tabId, translateModeTabs.has(activeInfo.tabId));
+});
+
 // 扩展安装时初始化存储结构
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('WordGet 扩展已安装');
@@ -118,9 +193,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 // 辅助函数：可靠地打开侧边栏（多策略尝试）
-async function openSidePanel(windowId, tabId) {
-  console.log('🚪 开始尝试打开侧边栏...', { windowId, tabId });
-  
+async function attemptOpenSidePanel(windowId, tabId) {
   if (!chrome.sidePanel) {
     console.error('❌ 当前浏览器不支持 sidePanel API');
     return false;
@@ -175,11 +248,26 @@ async function openSidePanel(windowId, tabId) {
     }
   }
 
-  console.error('❌ 所有打开侧边栏的方法都失败了');
   return false;
 }
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+async function openSidePanel(windowId, tabId, maxAttempts = 5) {
+  console.log('🚪 开始尝试打开侧边栏...', { windowId, tabId });
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const success = await attemptOpenSidePanel(windowId, tabId);
+    if (success) {
+      return true;
+    }
+
+    const delay = Math.min(150 * attempt, 600);
+    console.log(`🔁 第 ${attempt} 次尝试失败，${delay}ms 后重试`);
+    await sleep(delay);
+  }
+
+  console.error('❌ 多次尝试后仍无法打开侧边栏');
+  return false;
+}
 
 // 显示选择失败的警告（使用扩展图标徽章）
 async function showSelectionWarning(message) {
@@ -524,59 +612,46 @@ chrome.commands.onCommand.addListener(async (command) => {
     }
   }
   
-  // 新增：翻译显示命令
+  // 翻译阅读模式开关
   if (command === 'translate-word') {
-    console.log('🌍 用户按下了翻译显示快捷键');
-    
+    console.log('🌍 用户按下了翻译阅读模式快捷键');
+
     try {
-      // 1. 获取当前活动标签
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
+
       if (!tab || !tab.id) {
         console.error('未找到活动标签');
         return;
       }
-      
+
       console.log('当前标签:', tab.id, tab.url);
-      
-      // 2. 获取选中的文本
-      const selectionData = await getSelectionData(tab);
 
-      if (!selectionData || !selectionData.text) {
-        console.log('未检测到选中的文本');
-        await showSelectionWarning('没有检测到文本，请确认已选中内容。');
-        return;
-      }
+      const currentlyEnabled = translateModeTabs.has(tab.id);
+      const nextState = !currentlyEnabled;
 
-      console.log('准备翻译:', selectionData.text);
-      
-      // 3. 翻译单词和句子（并行）
-      const [wordTranslation, sentenceTranslation] = await Promise.all([
-        translateText(selectionData.text, 'zh-CN'),
-        selectionData.sentence ? translateText(selectionData.sentence, 'zh-CN') : Promise.resolve('')
-      ]);
-      
-      console.log('翻译完成 - 单词:', wordTranslation, '句子:', sentenceTranslation);
-      
-      // 4. 发送给 content script 显示
-      try {
-        await chrome.tabs.sendMessage(tab.id, {
-          action: 'showTranslation',
-          word: selectionData.text,
-          wordTranslation: wordTranslation,
-          sentence: selectionData.sentence,
-          sentenceTranslation: sentenceTranslation
-        });
-        
-        console.log('✅ 翻译提示已发送到页面');
-      } catch (error) {
-        console.error('发送翻译提示失败:', error);
-        await showSelectionWarning('无法显示翻译，页面可能未准备好。');
+      const success = await sendTranslateModeState(tab.id, nextState, 'manual');
+
+      if (success) {
+        if (nextState) {
+          translateModeTabs.add(tab.id);
+          console.log('✅ 翻译阅读模式已开启');
+        } else {
+          translateModeTabs.delete(tab.id);
+          console.log('🔕 翻译阅读模式已关闭');
+        }
+
+        await updateTranslateModeBadge(tab.id, nextState);
+      } else {
+        translateModeTabs.delete(tab.id);
+        await updateTranslateModeBadge(tab.id, false);
+
+        if (nextState) {
+          await showSelectionWarning('无法在此页面启用翻译阅读模式');
+        }
       }
-      
     } catch (error) {
-      console.error('翻译命令错误:', error);
-      await showSelectionWarning(`翻译时出错: ${error.message}`);
+      console.error('翻译阅读模式切换失败:', error);
+      await showSelectionWarning(`翻译阅读模式出错: ${error.message}`);
     }
   }
 });

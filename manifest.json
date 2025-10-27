@@ -55,7 +55,7 @@
         "default": "Ctrl+Q",
         "mac": "Command+Q"
       },
-      "description": "在鼠标位置显示选中文本的翻译"
+      "description": "切换翻译阅读模式"
     }
   },
   "web_accessible_resources": [

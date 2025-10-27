@@ -187,8 +187,35 @@ export class TooltipUI {
   /**
    * 处理鼠标移动（隐藏提示框）
    */
-  handleMouseMove() {
-    this.hide();
+  handleMouseMove(event) {
+    // 检查鼠标是否移动了一定距离
+    if (!this.tooltip) return;
+    
+    const rect = this.tooltip.getBoundingClientRect();
+    const buffer = 20; // 缓冲区，鼠标在提示框附近不会隐藏
+    
+    const isNearTooltip = (
+      event.clientX >= rect.left - buffer &&
+      event.clientX <= rect.right + buffer &&
+      event.clientY >= rect.top - buffer &&
+      event.clientY <= rect.bottom + buffer
+    );
+    
+    if (!isNearTooltip) {
+      // 延迟隐藏，避免误触
+      if (this.hideTimer) {
+        clearTimeout(this.hideTimer);
+      }
+      this.hideTimer = setTimeout(() => {
+        this.hide();
+      }, 200);
+    } else {
+      // 在提示框附近，取消隐藏
+      if (this.hideTimer) {
+        clearTimeout(this.hideTimer);
+        this.hideTimer = null;
+      }
+    }
   }
 
   /**

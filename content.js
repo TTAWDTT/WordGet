@@ -3,9 +3,15 @@
 console.log('WordGet content script 已加载于:', window.location.href);
 
 // 动态导入模块
-let ThemeDetector, TooltipUI;
+let ThemeDetector, TooltipUI, Translator;
 let tooltipInstance = null;
 let currentTheme = null;
+
+// 翻译阅读模式状态
+let translateModeActive = false;
+let translateDebounceTimer = null;
+let lastTranslateTrigger = { text: '', timestamp: 0 };
+let modeIndicator = null;
 
 // 初始化模块
 (async function initModules() {
@@ -14,9 +20,13 @@ let currentTheme = null;
     const themeModule = await import(chrome.runtime.getURL('modules/theme-detector.js'));
     ThemeDetector = themeModule.ThemeDetector;
     
-    // 导入悬浮提示UI模块
-    const tooltipModule = await import(chrome.runtime.getURL('modules/tooltip-ui.js'));
-    TooltipUI = tooltipModule.TooltipUI;
+  // 导入悬浮提示UI模块
+  const tooltipModule = await import(chrome.runtime.getURL('modules/tooltip-ui.js'));
+  TooltipUI = tooltipModule.TooltipUI;
+
+  // 导入翻译模块
+  const translatorModule = await import(chrome.runtime.getURL('modules/translator.js'));
+  Translator = translatorModule.Translator;
     
     // 初始化提示框实例
     tooltipInstance = new TooltipUI();
@@ -93,38 +103,230 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // 保持通道开放以支持异步响应
   }
   
-  // 新增：显示翻译提示
-  if (request.action === 'showTranslation') {
-    try {
-      if (!tooltipInstance) {
-        console.warn('提示框实例未初始化');
-        sendResponse({ success: false, error: '提示框未初始化' });
-        return false;
-      }
-
-      const { word, wordTranslation, sentence, sentenceTranslation } = request;
-      
-      // 使用最后一次记录的鼠标位置
-      tooltipInstance.show({
-        word,
-        wordTranslation,
-        sentence,
-        sentenceTranslation,
-        x: lastMousePosition.x,
-        y: lastMousePosition.y
-      });
-      
-      sendResponse({ success: true });
-    } catch (error) {
-      console.error('显示翻译提示时出错:', error);
-      sendResponse({ success: false, error: error.message });
-    }
-    
+  if (request.action === 'toggleTranslateMode') {
+    handleTranslateModeToggle(request.active, request.reason);
+    sendResponse({ success: true });
     return true;
   }
   
   return false;
 });
+
+async function handleTranslateModeToggle(shouldEnable, reason = 'manual') {
+  if (shouldEnable) {
+    await enableTranslateMode(reason);
+  } else {
+    disableTranslateMode(reason);
+  }
+}
+
+async function enableTranslateMode(reason = 'manual') {
+  if (translateModeActive) {
+    return;
+  }
+
+  translateModeActive = true;
+
+  // 确保模块可用
+  if (!Translator) {
+    try {
+      const translatorModule = await import(chrome.runtime.getURL('modules/translator.js'));
+      Translator = translatorModule.Translator;
+    } catch (error) {
+      console.error('无法加载翻译模块:', error);
+      translateModeActive = false;
+      return;
+    }
+  }
+
+  if (!tooltipInstance && TooltipUI) {
+    tooltipInstance = new TooltipUI();
+    if (currentTheme) {
+      tooltipInstance.setTheme(currentTheme);
+    }
+  }
+
+  document.addEventListener('mouseup', handleTranslateMouseUp, true);
+
+  document.body.classList.add('wordget-translate-mode');
+  showTranslateIndicator();
+
+  if (reason !== 'restore') {
+    showModeNotification('翻译阅读模式已开启');
+  }
+}
+
+function disableTranslateMode(reason = 'manual') {
+  if (!translateModeActive) {
+    return;
+  }
+
+  translateModeActive = false;
+  document.removeEventListener('mouseup', handleTranslateMouseUp, true);
+
+  if (translateDebounceTimer) {
+    clearTimeout(translateDebounceTimer);
+    translateDebounceTimer = null;
+  }
+
+  lastTranslateTrigger = { text: '', timestamp: 0 };
+
+  if (tooltipInstance && typeof tooltipInstance.hide === 'function') {
+    tooltipInstance.hide();
+  }
+
+  document.body.classList.remove('wordget-translate-mode');
+  hideTranslateIndicator();
+
+  if (reason !== 'restore') {
+    showModeNotification('翻译阅读模式已关闭');
+  }
+}
+
+function handleTranslateMouseUp(event) {
+  if (!translateModeActive) {
+    return;
+  }
+
+  // 延迟一点获取选择，确保选择已经完成
+  setTimeout(() => {
+    const selection = window.getSelection();
+    if (!selection || !selection.toString().trim()) {
+      return;
+    }
+
+    const selectedText = selection.toString().trim();
+    if (!selectedText) {
+      return;
+    }
+
+    if (selectedText.length > 5000) {
+      console.log('选中的文本过长，跳过翻译');
+      return;
+    }
+
+    const sentence = extractSentence(selection);
+    const pointer = {
+      x: event?.clientX ?? lastMousePosition.x,
+      y: event?.clientY ?? lastMousePosition.y
+    };
+
+    if (translateDebounceTimer) {
+      clearTimeout(translateDebounceTimer);
+    }
+
+    translateDebounceTimer = setTimeout(() => {
+      processAutomaticTranslation({
+        text: selectedText,
+        sentence,
+        pointer
+      });
+    }, 150);
+  }, 50);
+}
+
+async function processAutomaticTranslation({ text, sentence, pointer }) {
+  if (!translateModeActive || !text) {
+    return;
+  }
+
+  if (!Translator) {
+    console.warn('翻译模块未准备就绪');
+    return;
+  }
+
+  if (!tooltipInstance && TooltipUI) {
+    tooltipInstance = new TooltipUI();
+    if (currentTheme) {
+      tooltipInstance.setTheme(currentTheme);
+    }
+  }
+
+  const now = Date.now();
+  if (text === lastTranslateTrigger.text && now - lastTranslateTrigger.timestamp < 400) {
+    return;
+  }
+
+  lastTranslateTrigger = { text, timestamp: now };
+
+  const cleanSentence = (sentence && sentence.trim()) || text;
+  const limitedSentence = cleanSentence.length > 500 ? cleanSentence.slice(0, 500) : cleanSentence;
+
+  const pointerX = pointer?.x ?? lastMousePosition.x;
+  const pointerY = pointer?.y ?? lastMousePosition.y;
+
+  if (tooltipInstance) {
+    tooltipInstance.show({
+      word: text,
+      wordTranslation: '翻译加载中…',
+      sentence: limitedSentence,
+      sentenceTranslation: '',
+      x: pointerX,
+      y: pointerY
+    });
+  }
+
+  try {
+    const translations = await Translator.translateWordAndSentence(text, limitedSentence, 'zh-CN');
+    const wordTranslation = translations.wordTranslation || text;
+    const sentenceTranslation = translations.sentenceTranslation || translations.wordTranslation;
+
+    if (tooltipInstance) {
+      tooltipInstance.show({
+        word: text,
+        wordTranslation,
+        sentence: limitedSentence,
+        sentenceTranslation,
+        x: pointerX,
+        y: pointerY
+      });
+    }
+  } catch (error) {
+    console.error('翻译阅读模式翻译失败:', error);
+
+    if (tooltipInstance) {
+      tooltipInstance.show({
+        word: text,
+        wordTranslation: '翻译失败，请稍后重试',
+        sentence: limitedSentence,
+        sentenceTranslation: '',
+        x: pointerX,
+        y: pointerY
+      });
+    }
+  }
+}
+
+function showTranslateIndicator() {
+  if (modeIndicator) {
+    return;
+  }
+
+  modeIndicator = document.createElement('div');
+  modeIndicator.className = 'wordget-translate-indicator';
+  modeIndicator.textContent = '翻译阅读模式已开启';
+  document.body.appendChild(modeIndicator);
+
+  requestAnimationFrame(() => {
+    if (modeIndicator) {
+      modeIndicator.classList.add('show');
+    }
+  });
+}
+
+function hideTranslateIndicator() {
+  if (!modeIndicator) {
+    return;
+  }
+
+  modeIndicator.classList.remove('show');
+  setTimeout(() => {
+    if (modeIndicator) {
+      modeIndicator.remove();
+      modeIndicator = null;
+    }
+  }, 200);
+}
 
 // 提取包含选中文本的句子
 function extractSentence(selection) {
