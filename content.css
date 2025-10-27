@@ -34,7 +34,7 @@
   --wordget-muted-color: #666666;
   --wordget-divider-color: #eeeeee;
 
-  position: absolute;
+  position: fixed;
   z-index: 2147483647;
   background: var(--wordget-bg-color);
   border: 1px solid var(--wordget-border-color);

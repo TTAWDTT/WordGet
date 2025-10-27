@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>长页面翻译测试 - WordGet</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      line-height: 1.8;
+      color: #333;
+      background: linear-gradient(to bottom, #f7fafc 0%, #edf2f7 100%);
+    }
+
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 15px 20px;
+      z-index: 1000;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      color: #2d3748;
+    }
+
+    .header .status {
+      font-size: 14px;
+      color: #718096;
+      margin-top: 5px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 80px auto 40px;
+      padding: 0 20px;
+    }
+
+    .section {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      min-height: 500px;
+    }
+
+    .section-number {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .section h2 {
+      font-size: 28px;
+      color: #1a202c;
+      margin-bottom: 20px;
+    }
+
+    .section p {
+      font-size: 16px;
+      line-height: 1.8;
+      color: #4a5568;
+      margin-bottom: 15px;
+      text-align: justify;
+    }
+
+    .highlight {
+      background: linear-gradient(120deg, #fef5e7 0%, #fef5e7 100%);
+      background-repeat: no-repeat;
+      background-size: 100% 40%;
+      background-position: 0 85%;
+      padding: 2px 4px;
+      font-weight: 500;
+    }
+
+    .test-block {
+      background: #f7fafc;
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+
+    .test-block h3 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .scroll-indicator {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #667eea;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 25px;
+      font-size: 14px;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    .footer {
+      text-align: center;
+      padding: 40px 20px;
+      color: #718096;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🧪 长页面翻译测试</h1>
+    <div class="status">滚动页面测试不同位置的翻译功能 | 按 Ctrl+Q 开启翻译模式</div>
+  </div>
+
+  <div class="container">
+    <!-- Section 1 - 页面顶部 -->
+    <div class="section">
+      <span class="section-number">Section 1</span>
+      <h2>Introduction to Machine Learning</h2>
+      <p>
+        Machine learning is a subset of <span class="highlight">artificial intelligence</span> that focuses on the development of algorithms and statistical models. These models enable computers to improve their performance on tasks through experience and data, without being explicitly programmed for each specific task.
+      </p>
+      <div class="test-block">
+        <h3>测试文本 1:</h3>
+        <p>The fundamental principle behind machine learning is pattern recognition. By analyzing large datasets, algorithms can identify patterns and relationships that might not be immediately apparent to human observers.</p>
+      </div>
+      <p>
+        Deep learning, a specialized branch of machine learning, uses neural networks with multiple layers to process complex patterns in data. This approach has revolutionized fields such as computer vision, natural language processing, and speech recognition.
+      </p>
+      <p>
+        The success of machine learning depends heavily on the quality and quantity of training data. Clean, well-labeled datasets are essential for building accurate and reliable models. Data preprocessing, feature engineering, and model validation are critical steps in the development process.
+      </p>
+    </div>
+
+    <!-- Section 2 - 中间位置 -->
+    <div class="section">
+      <span class="section-number">Section 2</span>
+      <h2>Natural Language Processing</h2>
+      <p>
+        Natural Language Processing (NLP) is a field at the intersection of computer science, artificial intelligence, and linguistics. Its goal is to enable computers to understand, interpret, and generate human language in a way that is both meaningful and useful.
+      </p>
+      <div class="test-block">
+        <h3>测试文本 2:</h3>
+        <p>Modern NLP systems utilize sophisticated algorithms and neural network architectures to process text. These systems can perform tasks ranging from simple text classification to complex language generation and translation.</p>
+      </div>
+      <p>
+        Transformers, introduced in 2017, have become the dominant architecture in NLP. Models like BERT, GPT, and T5 have achieved unprecedented performance on a wide range of language understanding and generation tasks. These models are pre-trained on massive text corpora and can be fine-tuned for specific applications.
+      </p>
+      <p>
+        The practical applications of NLP are vast and growing. From chatbots and virtual assistants to sentiment analysis and document summarization, NLP technologies are transforming how we interact with machines and process information at scale.
+      </p>
+    </div>
+
+    <!-- Section 3 - 下方位置 -->
+    <div class="section">
+      <span class="section-number">Section 3</span>
+      <h2>Computer Vision Applications</h2>
+      <p>
+        Computer vision is the field of artificial intelligence that enables computers to derive meaningful information from digital images, videos, and other visual inputs. This technology aims to replicate the complexity of human vision and enable automated visual understanding.
+      </p>
+      <div class="test-block">
+        <h3>测试文本 3:</h3>
+        <p>Convolutional Neural Networks (CNNs) have revolutionized computer vision by automatically learning hierarchical features from images. These networks can identify objects, detect faces, and even understand complex scenes with remarkable accuracy.</p>
+      </div>
+      <p>
+        Real-world applications of computer vision span numerous industries. In healthcare, it assists in medical image analysis and disease diagnosis. In autonomous vehicles, it enables object detection and scene understanding. In retail, it powers facial recognition and inventory management systems.
+      </p>
+      <p>
+        The integration of computer vision with other AI technologies creates powerful synergies. When combined with NLP, systems can generate descriptions of images or answer questions about visual content. When paired with robotics, they enable machines to navigate and interact with the physical world autonomously.
+      </p>
+    </div>
+
+    <!-- Section 4 - 更下方 -->
+    <div class="section">
+      <span class="section-number">Section 4</span>
+      <h2>Reinforcement Learning</h2>
+      <p>
+        Reinforcement learning is a type of machine learning where an agent learns to make decisions by interacting with an environment. The agent receives rewards or penalties based on its actions and learns to maximize cumulative rewards over time.
+      </p>
+      <div class="test-block">
+        <h3>测试文本 4:</h3>
+        <p>The core concept of reinforcement learning involves exploration and exploitation. The agent must balance trying new actions to discover better strategies while also leveraging known good actions to maximize rewards.</p>
+      </div>
+      <p>
+        Deep reinforcement learning combines neural networks with reinforcement learning principles. This approach has achieved superhuman performance in complex games like Go, Chess, and various video games. The success of systems like AlphaGo demonstrates the power of this paradigm.
+      </p>
+      <p>
+        Beyond games, reinforcement learning is being applied to real-world problems such as robotics control, resource management, recommendation systems, and autonomous navigation. The ability to learn optimal behaviors through trial and error makes it particularly suitable for complex, dynamic environments.
+      </p>
+    </div>
+
+    <!-- Section 5 - 底部 -->
+    <div class="section">
+      <span class="section-number">Section 5</span>
+      <h2>The Future of AI</h2>
+      <p>
+        As artificial intelligence continues to advance, we are witnessing the emergence of more sophisticated and capable systems. The convergence of different AI technologies is creating unprecedented opportunities and challenges across all sectors of society.
+      </p>
+      <div class="test-block">
+        <h3>测试文本 5:</h3>
+        <p>Ethical considerations are becoming increasingly important in AI development. Issues such as bias in algorithms, privacy concerns, and the societal impact of automation require careful attention from researchers, developers, and policymakers.</p>
+      </div>
+      <p>
+        The democratization of AI tools and frameworks has accelerated innovation and adoption. Open-source libraries, cloud-based platforms, and pre-trained models make it easier than ever for developers to build intelligent applications. This accessibility is driving AI integration across industries.
+      </p>
+      <p>
+        Looking ahead, the focus is shifting toward creating more robust, interpretable, and efficient AI systems. Research in areas like few-shot learning, transfer learning, and explainable AI aims to address current limitations and unlock new possibilities for artificial intelligence applications.
+      </p>
+    </div>
+
+    <!-- Section 6 - 最底部测试 -->
+    <div class="section">
+      <span class="section-number">Section 6</span>
+      <h2>Testing Zone - Bottom of Page</h2>
+      <p>
+        This section is specifically designed to test translation functionality at the very bottom of a long page. Scroll position and viewport calculations should work correctly regardless of where the user is on the page.
+      </p>
+      <div class="test-block">
+        <h3>最终测试文本:</h3>
+        <p>Select this text to verify that the translation tooltip appears in the correct position even at the bottom of a very long page. The tooltip should always be visible within the viewport and not be cut off or positioned incorrectly.</p>
+      </div>
+      <p>
+        The translation system should handle edge cases gracefully, including selections near page boundaries, selections in scrolled content, and selections in dynamically positioned elements. Proper positioning is crucial for a good user experience.
+      </p>
+    </div>
+  </div>
+
+  <div class="scroll-indicator">
+    ⬇️ 继续滚动测试
+  </div>
+
+  <div class="footer">
+    <p>📝 测试说明：</p>
+    <p>1. 按 Ctrl+Q 开启翻译阅读模式</p>
+    <p>2. 滚动到不同的 Section,选择英文文本测试翻译</p>
+    <p>3. 验证 tooltip 在所有滚动位置都能正确显示</p>
+    <p>4. 特别注意页面顶部、中间、底部的翻译效果</p>
+    <p><br>© 2024 WordGet - Long Page Translation Test</p>
+  </div>
+
+  <script>
+    // 显示当前滚动位置
+    const scrollIndicator = document.querySelector('.scroll-indicator');
+    let hideTimer = null;
+
+    window.addEventListener('scroll', () => {
+      const scrollPercent = Math.round((window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100);
+      scrollIndicator.textContent = `📍 滚动位置: ${scrollPercent}%`;
+      scrollIndicator.style.display = 'block';
+
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => {
+        scrollIndicator.textContent = '⬇️ 继续滚动测试';
+      }, 1500);
+    });
+
+    // 控制台日志
+    console.log('%c长页面翻译测试页面已加载', 'color: #667eea; font-size: 16px; font-weight: bold;');
+    console.log('%c测试步骤:', 'color: #48bb78; font-size: 14px; font-weight: bold;');
+    console.log('1. 按 Ctrl+Q 开启翻译模式');
+    console.log('2. 滚动到不同位置');
+    console.log('3. 选择英文文本查看翻译');
+    console.log('4. 验证 tooltip 位置是否正确');
+    console.log('\n如需调试信息,运行: window.wordgetDebug = true');
+  </script>
+</body>
+</html>
