@@ -45,15 +45,15 @@
   "commands": {
     "save-word": {
       "suggested_key": {
-        "default": "Alt+Shift+S",
-        "mac": "Alt+Shift+S"
+        "default": "Ctrl+Shift+S",
+        "mac": "Command+Shift+S"
       },
       "description": "保存选中的单词到单词本"
     },
     "translate-word": {
       "suggested_key": {
-        "default": "Ctrl+Shift+T",
-        "mac": "Command+Shift+T"
+        "default": "Ctrl+Q",
+        "mac": "Command+Q"
       },
       "description": "在鼠标位置显示选中文本的翻译"
     }
