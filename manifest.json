@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "WordGet - Vocabulary Notebook",
-  "version": "1.0.2",
-  "description": "智能单词本：选中单词即可保存，自动翻译并提取例句",
+  "version": "2.0.0",
+  "description": "智能单词本：选中单词即可保存，自动翻译并提取例句，支持即时翻译显示",
   "permissions": [
     "storage",
     "activeTab",
@@ -45,15 +45,15 @@
   "commands": {
     "save-word": {
       "suggested_key": {
-        "default": "Alt+S",
-        "mac": "Option+S"
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
       },
       "description": "保存选中的单词到单词本"
     },
     "translate-word": {
       "suggested_key": {
-        "default": "Ctrl+Shift+S",
-        "mac": "Command+Shift+S"
+        "default": "Ctrl+Shift+T",
+        "mac": "Command+Shift+T"
       },
       "description": "在鼠标位置显示选中文本的翻译"
     }
