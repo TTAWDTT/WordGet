@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>滚动修复演示 - WordGet</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 40px;
+      line-height: 1.8;
+      background: #f5f5f5;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .section {
+      margin-bottom: 60px;
+      padding: 30px;
+      background: #f9f9f9;
+      border-radius: 8px;
+      min-height: 400px;
+    }
+    
+    .section h2 {
+      color: #667eea;
+      margin-bottom: 20px;
+    }
+    
+    .test-text {
+      background: linear-gradient(120deg, #fef5e7 0%, #fef5e7 100%);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    
+    .test-text:hover {
+      background: linear-gradient(120deg, #fce4a7 0%, #fce4a7 100%);
+    }
+    
+    .instructions {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 4px;
+    }
+    
+    .instructions h3 {
+      margin-top: 0;
+      color: #1976d2;
+    }
+    
+    .demo-tooltip {
+      position: fixed;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-left: 3px solid #667eea;
+      border-radius: 8px;
+      padding: 12px 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      z-index: 999999;
+      display: none;
+      max-width: 400px;
+    }
+    
+    .demo-tooltip.visible {
+      display: block;
+    }
+    
+    .demo-tooltip .word {
+      font-weight: 600;
+      font-size: 16px;
+      color: #48bb78;
+      margin-bottom: 8px;
+    }
+    
+    .demo-tooltip .translation {
+      color: #667eea;
+      font-size: 14px;
+    }
+    
+    .scroll-indicator {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #667eea;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 25px;
+      font-size: 14px;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="instructions">
+      <h3>📖 测试说明</h3>
+      <p><strong>测试目标：</strong>验证滚动时提示框位置同步更新</p>
+      <ol>
+        <li>点击下方高亮的英文文本</li>
+        <li>会出现一个模拟的翻译提示框</li>
+        <li>滚动页面</li>
+        <li>观察提示框是否随着滚动同步移动</li>
+        <li>提示框应该保持与被点击文本的相对位置</li>
+      </ol>
+      <p><strong>预期效果：</strong>滚动时，提示框应该像"固定"在文本上一样随之移动</p>
+    </div>
+    
+    <div class="section">
+      <h2>Section 1 - 页面顶部</h2>
+      <p>
+        This is a <span class="test-text" data-word="demonstration">demonstration</span> of the scroll synchronization fix.
+        When you click on highlighted words, a tooltip will appear. Try scrolling the page and see if the
+        <span class="test-text" data-word="tooltip">tooltip</span> moves with the content.
+      </p>
+      <p>
+        The <span class="test-text" data-word="implementation">implementation</span> tracks the original position
+        and scroll offset, then adjusts the tooltip position based on the scroll delta.
+      </p>
+    </div>
+    
+    <div class="section">
+      <h2>Section 2 - 页面中部</h2>
+      <p>
+        Machine learning is a <span class="test-text" data-word="revolutionary">revolutionary</span> technology
+        that enables computers to learn from data. Deep learning uses
+        <span class="test-text" data-word="neural networks">neural networks</span> with multiple layers.
+      </p>
+      <p>
+        The <span class="test-text" data-word="architecture">architecture</span> of these systems is highly
+        sophisticated and requires careful design and <span class="test-text" data-word="optimization">optimization</span>.
+      </p>
+    </div>
+    
+    <div class="section">
+      <h2>Section 3 - 页面下部</h2>
+      <p>
+        Natural language <span class="test-text" data-word="processing">processing</span> enables computers to
+        understand human language. This <span class="test-text" data-word="technology">technology</span> has
+        applications in translation, sentiment analysis, and more.
+      </p>
+      <p>
+        The future of AI holds <span class="test-text" data-word="tremendous">tremendous</span> potential for
+        solving complex problems and improving human life.
+      </p>
+    </div>
+    
+    <div class="section">
+      <h2>Section 4 - 最底部测试区</h2>
+      <p>
+        This final section tests the <span class="test-text" data-word="behavior">behavior</span> at the bottom
+        of the page. The tooltip should handle <span class="test-text" data-word="boundary">boundary</span>
+        conditions gracefully.
+      </p>
+      <p>
+        Even when scrolling near page <span class="test-text" data-word="edges">edges</span>, the positioning
+        should remain <span class="test-text" data-word="accurate">accurate</span> and visually appealing.
+      </p>
+    </div>
+  </div>
+  
+  <div id="demo-tooltip" class="demo-tooltip">
+    <div class="word" id="tooltip-word"></div>
+    <div class="translation" id="tooltip-translation"></div>
+  </div>
+  
+  <div class="scroll-indicator" id="scroll-indicator">滚动位置: 0%</div>
+  
+  <script>
+    // 模拟 tooltip-ui.js 的滚动同步逻辑
+    class DemoTooltip {
+      constructor() {
+        this.tooltip = document.getElementById('demo-tooltip');
+        this.originalX = 0;
+        this.originalY = 0;
+        this.scrollX = 0;
+        this.scrollY = 0;
+        this.scrollHandler = this.handleScroll.bind(this);
+      }
+      
+      show(word, translation, x, y) {
+        // 存储原始位置和滚动偏移
+        this.originalX = x;
+        this.originalY = y;
+        this.scrollX = window.scrollX || window.pageXOffset;
+        this.scrollY = window.scrollY || window.pageYOffset;
+        
+        // 更新内容
+        document.getElementById('tooltip-word').textContent = word;
+        document.getElementById('tooltip-translation').textContent = `翻译: ${translation}`;
+        
+        // 显示并定位
+        this.updatePosition(x, y);
+        this.tooltip.classList.add('visible');
+        
+        // 添加滚动监听
+        window.addEventListener('scroll', this.scrollHandler, true);
+      }
+      
+      hide() {
+        this.tooltip.classList.remove('visible');
+        window.removeEventListener('scroll', this.scrollHandler, true);
+      }
+      
+      handleScroll() {
+        // 计算滚动偏移量
+        const currentScrollX = window.scrollX || window.pageXOffset;
+        const currentScrollY = window.scrollY || window.pageYOffset;
+        
+        const deltaX = currentScrollX - this.scrollX;
+        const deltaY = currentScrollY - this.scrollY;
+        
+        // 调整位置（与实际的 tooltip-ui.js 相同的逻辑）
+        const adjustedX = this.originalX - deltaX;
+        const adjustedY = this.originalY - deltaY;
+        
+        this.updatePosition(adjustedX, adjustedY);
+      }
+      
+      updatePosition(x, y) {
+        // 获取提示框尺寸
+        this.tooltip.offsetHeight; // 强制重排
+        const rect = this.tooltip.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // 计算位置（默认右下方）
+        let left = x + 15;
+        let top = y + 15;
+        
+        // 边界检测
+        if (left + rect.width > viewportWidth - 10) {
+          left = x - rect.width - 15;
+        }
+        if (top + rect.height > viewportHeight - 10) {
+          top = y - rect.height - 15;
+        }
+        if (left < 10) left = 10;
+        if (top < 10) top = 10;
+        
+        // 应用位置
+        this.tooltip.style.left = `${left}px`;
+        this.tooltip.style.top = `${top}px`;
+      }
+    }
+    
+    // 创建 tooltip 实例
+    const tooltip = new DemoTooltip();
+    
+    // 简单的翻译字典
+    const translations = {
+      'demonstration': '演示',
+      'tooltip': '提示框',
+      'implementation': '实现',
+      'revolutionary': '革命性的',
+      'neural networks': '神经网络',
+      'architecture': '架构',
+      'optimization': '优化',
+      'processing': '处理',
+      'technology': '技术',
+      'tremendous': '巨大的',
+      'behavior': '行为',
+      'boundary': '边界',
+      'edges': '边缘',
+      'accurate': '准确的'
+    };
+    
+    // 为所有测试文本添加点击事件
+    document.querySelectorAll('.test-text').forEach(element => {
+      element.addEventListener('click', (e) => {
+        const word = element.dataset.word;
+        const translation = translations[word] || '未知';
+        const x = e.clientX;
+        const y = e.clientY;
+        
+        tooltip.show(word, translation, x, y);
+      });
+    });
+    
+    // 点击其他地方隐藏 tooltip
+    document.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('test-text') && 
+          !document.getElementById('demo-tooltip').contains(e.target)) {
+        tooltip.hide();
+      }
+    });
+    
+    // 更新滚动指示器
+    window.addEventListener('scroll', () => {
+      const scrollPercent = Math.round(
+        (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100
+      );
+      document.getElementById('scroll-indicator').textContent = `滚动位置: ${scrollPercent}%`;
+    });
+    
+    console.log('%c滚动修复演示页面已加载', 'color: #667eea; font-size: 16px; font-weight: bold;');
+    console.log('点击高亮文本查看提示框，然后滚动页面测试同步效果');
+  </script>
+</body>
+</html>

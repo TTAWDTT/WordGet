@@ -11,6 +11,12 @@ export class TooltipUI {
     this.eventListenersAdded = false;
     this.mouseMoveBound = this.handleMouseMove.bind(this);
     this.clickBound = this.handleClick.bind(this);
+    this.scrollBound = this.handleScroll.bind(this);
+    // Store original position and scroll offset
+    this.originalX = 0;
+    this.originalY = 0;
+    this.scrollX = 0;
+    this.scrollY = 0;
   }
 
   /**
@@ -70,6 +76,12 @@ export class TooltipUI {
         视口: { width: window.innerWidth, height: window.innerHeight }
       });
     }
+    
+    // Store original coordinates and current scroll position
+    this.originalX = x;
+    this.originalY = y;
+    this.scrollX = window.scrollX || window.pageXOffset;
+    this.scrollY = window.scrollY || window.pageYOffset;
     
     // 移除旧的事件监听器
     this.removeEventListeners();
@@ -241,6 +253,7 @@ export class TooltipUI {
     
     document.addEventListener('mousemove', this.mouseMoveBound);
     document.addEventListener('click', this.clickBound, true);
+    window.addEventListener('scroll', this.scrollBound, true);
     this.eventListenersAdded = true;
   }
 
@@ -252,6 +265,7 @@ export class TooltipUI {
     
     document.removeEventListener('mousemove', this.mouseMoveBound);
     document.removeEventListener('click', this.clickBound, true);
+    window.removeEventListener('scroll', this.scrollBound, true);
     this.eventListenersAdded = false;
   }
 
@@ -283,6 +297,29 @@ export class TooltipUI {
     if (this.tooltip && !this.tooltip.contains(event.target)) {
       this.hide();
     }
+  }
+
+  /**
+   * 处理页面滚动（更新提示框位置）
+   */
+  handleScroll(event) {
+    if (!this.tooltip) return;
+    
+    // Calculate current scroll position
+    const currentScrollX = window.scrollX || window.pageXOffset;
+    const currentScrollY = window.scrollY || window.pageYOffset;
+    
+    // Calculate scroll delta
+    const deltaX = currentScrollX - this.scrollX;
+    const deltaY = currentScrollY - this.scrollY;
+    
+    // Adjust tooltip position by the scroll delta
+    // Since we use fixed positioning, we need to move the tooltip in the opposite direction of scroll
+    const adjustedX = this.originalX - deltaX;
+    const adjustedY = this.originalY - deltaY;
+    
+    // Update position with adjusted coordinates
+    this.updatePosition(adjustedX, adjustedY);
   }
 
   /**
