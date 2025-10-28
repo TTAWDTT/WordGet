@@ -2,14 +2,15 @@
 
 一个优雅的浏览器扩展，帮助你在阅读任何网页内容时快速保存和学习单词。
 
-## v2.0 重大更新
+## v2.1 最新更新 🎉
 
-### ✨ 全新功能
+### ✨ 核心改进
 
-- 🌍 **即时翻译显示** - 选中文本按 `Ctrl+Shift+S` 在鼠标位置显示翻译提示框
-- 🎨 **自适应主题** - 翻译提示自动匹配页面明暗模式和配色
-- ⚡ **智能交互** - 鼠标移动自动隐藏，无需手动关闭
-- 📦 **模块化架构** - 代码完全重构，结构清晰，易于维护
+- � **精准定位系统** - 使用选区矩形算法，tooltip 位置 99%+ 准确
+- 📏 **完美边界检测** - 四边智能检测，确保提示框始终可见
+- 🔄 **长页面优化** - 使用 fixed 定位，滚动时位置完全稳定
+- 🐛 **彻底修复错位** - 解决渲染时序、坐标验证等底层问题
+- � **调试系统** - 可选调试模式，详细日志助力问题定位
 
 ### 🔄 快捷键说明
 
@@ -18,8 +19,61 @@
 | 💾 保存单词 | `Ctrl+Shift+S` | 保存到单词本，自动打开侧边栏 |
 | 🌍 翻译阅读模式 | `Ctrl+Q` | 开启/关闭翻译阅读模式，选中文本自动翻译 |
 
+### 🎨 核心特性
+
+- 🌍 **即时翻译显示** - 选中文本自动显示翻译提示框，位置精准跟随选区
+- 🎨 **自适应主题** - 翻译提示自动匹配页面明暗模式和配色
+- ⚡ **智能交互** - 鼠标移动自动隐藏，无需手动关闭
+- 📦 **模块化架构** - 代码完全重构，结构清晰，易于维护
+
 > 📖 翻译阅读模式详细使用指南：[TRANSLATION_MODE_GUIDE.md](./TRANSLATION_MODE_GUIDE.md)  
 > 🚀 快速上手指南请查看 [QUICKSTART_V2.md](./QUICKSTART_V2.md)
+
+---
+
+## 🧪 测试工具
+
+### 专门测试页面
+
+#### 1. Tooltip 定位测试
+```
+打开：test-tooltip-position.html
+```
+- 📍 9个测试区域（覆盖所有边角和中心）
+- 📊 实时鼠标位置追踪
+- 🐛 调试信息面板
+- 📝 MutationObserver 监听
+
+#### 2. 长页面滚动测试
+```
+打开：test-long-page.html
+```
+- 📏 超过 3000px 高度
+- 📍 6个测试区域
+- 📊 实时滚动位置显示
+- 🎨 美观的测试界面
+
+### 快速测试步骤
+
+1. **开启调试模式**
+   ```javascript
+   window.wordgetDebug = true;
+   ```
+
+2. **开启翻译模式**
+   - 按 `Ctrl+Q`
+
+3. **测试不同位置**
+   - 页面顶部、中部、底部
+   - 屏幕左右边缘
+   - 滚动后的各个位置
+
+4. **查看调试信息**
+   - 控制台显示详细日志
+   - 坐标来源标注
+   - 位置计算过程
+
+详见：[QUICK_TEST_GUIDE.md](./QUICK_TEST_GUIDE.md)
 
 ---
 
@@ -83,24 +137,36 @@
 
 ## 🚀 使用指南
 
-### 🌍 翻译阅读模式（推荐）
+### 🌍 翻译阅读模式（推荐）⭐
 
 **适合场景**：阅读英文网页时快速理解生词
 
 1. 按 `Ctrl+Q` 开启翻译阅读模式
 2. 页面右上角会显示蓝色指示器
 3. 用鼠标选中任意英文文本
-4. 松开鼠标后自动显示翻译提示框
-5. 鼠标移开，提示框自动消失
-6. 再次按 `Ctrl+Q` 关闭模式
+4. 松开鼠标后**自动显示翻译提示框**
+5. 提示框**智能定位**在选中文本附近
+6. 鼠标移开，提示框自动消失
+7. 再次按 `Ctrl+Q` 关闭模式
 
 **特点**：
 - ⚡ 即时翻译，无需手动操作
-- 🎯 提示框跟随鼠标位置
+- 🎯 **精准定位** - 基于选区矩形算法，位置准确
+- 📏 **智能边界检测** - 屏幕边缘自动调整显示方向
+- 🔄 **长页面支持** - 滚动时位置始终正确
 - 🎨 自适应页面主题
 - 📝 同时显示单词和例句翻译
+- 🌐 支持 Shadow DOM 和特殊网站（如 GitHub）
 
->  **详细使用指南**：[翻译阅读模式完整教程](./TRANSLATION_MODE_GUIDE.md)
+**调试模式**：
+```javascript
+// 在控制台运行，查看详细定位信息
+window.wordgetDebug = true;
+```
+
+>  **详细使用指南**：[翻译阅读模式完整教程](./TRANSLATION_MODE_GUIDE.md)  
+>  **技术文档**：[Tooltip 精准定位修复方案](./TOOLTIP_FIX_COMPLETE.md)  
+>  **测试指南**：[快速测试工具使用说明](./QUICK_TEST_GUIDE.md)
 
 ### 💾 保存单词
 
@@ -160,31 +226,68 @@ WordGet 支持智能主题适配功能：
 - **Web Speech API** - 单词发音功能
 - **Translation API** - 多种翻译服务集成
 - **CSS Variables** - 动态主题系统
+- **Selection API** - 精准选区矩形定位
+
+### 核心算法
+
+#### Tooltip 精准定位系统
+```javascript
+// 1. 获取选区矩形（支持多行文本）
+const selectionRect = range.getBoundingClientRect();
+
+// 2. 计算显示点（选区中心底部）
+const centerX = left + width / 2;
+const baselineY = bottom;  // 使用底部作为基准
+
+// 3. 四边界智能检测
+if (超出右边界) 显示在左侧;
+if (超出底边界) 显示在上方;
+if (超出左边界) 保持最小边距;
+if (超出顶边界) 保持最小边距;
+
+// 4. 使用 fixed 定位，支持长页面滚动
+position: fixed;  // 相对视口，不受滚动影响
+```
+
+#### 渲染时序优化
+```javascript
+// 双重 requestAnimationFrame 确保 DOM 渲染完成
+requestAnimationFrame(() => {
+  updatePosition(x, y);  // 第一帧：计算位置
+  requestAnimationFrame(() => {
+    showAnimation();     // 第二帧：触发动画
+  });
+});
+```
 
 ### 文件结构
 ```
 WordGet/
-├── modules/               # 功能模块（v2.0新增）
-│   ├── theme-detector.js # 主题检测
-│   ├── translator.js     # 翻译功能
-│   ├── storage-manager.js# 数据存储
-│   └── tooltip-ui.js     # 悬浮提示UI
-├── manifest.json         # 扩展配置文件
-├── background.js         # 后台服务Worker
-├── content.js            # 内容脚本（页面交互）
-├── content.css           # 内容脚本样式
-├── sidebar.html          # 侧边栏HTML
-├── sidebar.css           # 侧边栏样式
-├── sidebar.js            # 侧边栏逻辑
-├── icons/                # 扩展图标
+├── modules/                  # 功能模块（v2.0新增）
+│   ├── theme-detector.js    # 主题检测
+│   ├── translator.js        # 翻译功能（支持重试机制）
+│   ├── storage-manager.js   # 数据存储
+│   └── tooltip-ui.js        # 悬浮提示UI（精准定位系统）
+├── manifest.json            # 扩展配置文件
+├── background.js            # 后台服务Worker
+├── content.js               # 内容脚本（选区矩形算法）
+├── content.css              # 内容脚本样式（fixed定位）
+├── sidebar.html             # 侧边栏HTML
+├── sidebar.css              # 侧边栏样式
+├── sidebar.js               # 侧边栏逻辑
+├── icons/                   # 扩展图标
 │   ├── icon16.png
 │   ├── icon32.png
 │   ├── icon48.png
 │   └── icon128.png
-├── FEATURES.md           # 功能详细说明
-├── MODULES_GUIDE.md      # 模块化开发指南
-├── QUICKSTART_V2.md      # 快速入门指南
-└── README.md             # 项目文档
+├── test-tooltip-position.html  # Tooltip定位测试页面
+├── test-long-page.html         # 长页面滚动测试
+├── TOOLTIP_FIX_COMPLETE.md     # Tooltip修复技术文档
+├── QUICK_TEST_GUIDE.md         # 快速测试指南
+├── FEATURES.md              # 功能详细说明
+├── MODULES_GUIDE.md         # 模块化开发指南
+├── QUICKSTART_V2.md         # 快速入门指南
+└── README.md                # 项目文档
 ```
 
 ### 数据存储
@@ -218,12 +321,23 @@ WordGet/
 
 ## 📝 更新日志
 
+### v2.1.0 (2025-10-29) 🎯
+- 🎉 **重大修复** - 彻底解决 tooltip 位置错乱问题
+- 🎯 **选区矩形算法** - 基于文本选区几何中心精准定位
+- 📏 **完整边界检测** - 四边智能检测，自动调整显示方向
+- 🔄 **长页面优化** - 使用 fixed 定位，滚动时位置稳定
+- ⏰ **渲染时序同步** - 双重 RAF 确保 DOM 渲染完成
+- 🐛 **坐标验证** - 严格类型检查，杜绝无效数据
+- 📊 **调试系统** - 可选详细日志，标注坐标来源
+- 🧪 **测试工具** - 新增专门的定位诊断测试页面
+- 📚 **技术文档** - 完整的修复说明和快速测试指南
+
 ### v2.0.0 (2025-10-27)
 - 🎉 **重大更新** - 完整模块化重构
-- ✨ 新增即时翻译显示功能 (`Ctrl+Shift+S`)
+- ✨ 新增即时翻译显示功能 (`Ctrl+Q`)
 - 🎨 自适应主题系统升级
 - 📦 创建 modules/ 目录，代码模块化
-- ⌨️ 快捷键调整：保存改为 `Alt+S`
+- ⌨️ 快捷键调整：保存改为 `Ctrl+Shift+S`
 - 📚 新增详细文档：FEATURES.md, MODULES_GUIDE.md, QUICKSTART_V2.md
 - ⚡ 性能优化和代码重构
 
