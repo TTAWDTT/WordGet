@@ -89,10 +89,36 @@ export class TooltipUI {
     // 如果提示框不存在，则创建
     if (!this.tooltip) {
       this.tooltip = this.createTooltipElement();
-      document.body.appendChild(this.tooltip);
+      
+      // 确保添加到 body 的最外层，避免继承任何 transform
+      if (document.body) {
+        document.body.appendChild(this.tooltip);
+      } else {
+        // 如果 body 还不存在，等待 DOM 加载
+        document.addEventListener('DOMContentLoaded', () => {
+          if (this.tooltip && !this.tooltip.parentNode) {
+            document.body.appendChild(this.tooltip);
+          }
+        });
+        return; // 等待下次调用
+      }
       
       if (isDebugMode()) {
         console.log('[WordGet] Tooltip元素已创建并添加到DOM');
+        
+        // 检查是否有影响定位的父元素样式
+        let parent = this.tooltip.parentElement;
+        while (parent) {
+          const styles = getComputedStyle(parent);
+          if (styles.transform !== 'none' || styles.position === 'fixed' || styles.position === 'sticky') {
+            console.warn('[WordGet] 警告：父元素有可能影响定位的样式:', {
+              element: parent.tagName,
+              transform: styles.transform,
+              position: styles.position
+            });
+          }
+          parent = parent.parentElement;
+        }
       }
     } else {
       // 如果已存在，确保主题最新
@@ -179,24 +205,51 @@ export class TooltipUI {
     const isDebugMode = () => window.wordgetDebug === true;
     if (isDebugMode()) {
       console.log('[WordGet] Tooltip定位信息:', {
-        鼠标位置: { x, y },
+        输入坐标: { x, y },
         Tooltip尺寸: { width: rect.width, height: rect.height },
-        视口尺寸: { width: viewportWidth, height: viewportHeight }
+        视口尺寸: { width: viewportWidth, height: viewportHeight },
+        页面滚动: { scrollX: window.scrollX, scrollY: window.scrollY },
+        当前tooltip位置: { 
+          left: this.tooltip.style.left, 
+          top: this.tooltip.style.top 
+        },
+        计算样式: {
+          position: getComputedStyle(this.tooltip).position,
+          transform: getComputedStyle(this.tooltip).transform
+        }
       });
     }
     
-    // 默认位置：鼠标右下方
-    let left = x + 15;
-    let top = y + 15;
-    
-    // 右边界检测：如果超出右边界，显示在鼠标左侧
-    if (left + rect.width > viewportWidth - 10) {
-      left = x - rect.width - 15;
+    // 验证输入坐标的有效性
+    if (typeof x !== 'number' || !Number.isFinite(x) || 
+        typeof y !== 'number' || !Number.isFinite(y)) {
+      console.error('[WordGet] 无效的坐标:', { x, y });
+      return;
     }
     
-    // 底边界检测：如果超出底边界，显示在鼠标上方
+    // 钳制输入坐标到视口范围内
+    const safeX = Math.max(0, Math.min(x, viewportWidth));
+    const safeY = Math.max(0, Math.min(y, viewportHeight));
+    
+    if (isDebugMode() && (safeX !== x || safeY !== y)) {
+      console.warn('[WordGet] 坐标超出视口，已调整:', {
+        原始: { x, y },
+        调整后: { x: safeX, y: safeY }
+      });
+    }
+    
+    // 默认位置：基准点右下方
+    let left = safeX + 15;
+    let top = safeY + 15;
+    
+    // 右边界检测：如果超出右边界，显示在基准点左侧
+    if (left + rect.width > viewportWidth - 10) {
+      left = safeX - rect.width - 15;
+    }
+    
+    // 底边界检测：如果超出底边界，显示在基准点上方
     if (top + rect.height > viewportHeight - 10) {
-      top = y - rect.height - 15;
+      top = safeY - rect.height - 15;
     }
     
     // 左边界检测：确保不超出左边界
@@ -214,7 +267,14 @@ export class TooltipUI {
     top = Math.max(10, Math.min(top, viewportHeight - rect.height - 10));
     
     if (isDebugMode()) {
-      console.log('[WordGet] 最终位置:', { left, top });
+      console.log('[WordGet] 最终位置:', { 
+        left, 
+        top,
+        调整说明: {
+          水平: left < safeX ? '左侧' : '右侧',
+          垂直: top < safeY ? '上方' : '下方'
+        }
+      });
     }
     
     this.tooltip.style.left = `${left}px`;

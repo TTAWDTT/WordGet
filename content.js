@@ -516,6 +516,21 @@ function getSelectionRect(selection) {
     }
 
     const boundingRect = range.getBoundingClientRect();
+    
+    const isDebugMode = () => window.wordgetDebug === true;
+    if (isDebugMode()) {
+      console.log('[WordGet] 选区原始矩形:', {
+        left: boundingRect.left,
+        top: boundingRect.top,
+        right: boundingRect.right,
+        bottom: boundingRect.bottom,
+        width: boundingRect.width,
+        height: boundingRect.height,
+        scrollY: window.scrollY,
+        scrollX: window.scrollX
+      });
+    }
+    
     if (isUsableRect(boundingRect)) {
       return normalizeRect(boundingRect);
     }
