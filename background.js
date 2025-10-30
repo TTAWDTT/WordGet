@@ -761,23 +761,92 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // 翻译功能（使用免费翻译 API）
-async function translateText(text, targetLang = 'zh-CN') {
+async function translateText(text, targetLang = 'zh-CN', sourceLang = 'auto') {
+  if (!text || !text.trim()) {
+    return '';
+  }
+
+  const originalText = text.trim();
+
   try {
     // 使用 Google 翻译的非官方 API
     // 注意：生产环境建议使用官方 API 和 API 密钥
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
     
-    const response = await fetch(url);
-    const data = await response.json();
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0'
+      }
+    });
     
-    if (data && data[0]) {
-      return data[0].map(item => item[0]).join('');
+    if (!response.ok) {
+      throw new Error(`翻译请求失败: ${response.status}`);
     }
     
-    return text;
+    const data = await response.json();
+    
+    // 调试日志
+    if (typeof window !== 'undefined' && window.wordgetDebug) {
+      console.log('[WordGet Background] 原文:', originalText);
+      console.log('[WordGet Background] API响应:', data);
+      console.log('[WordGet Background] 检测到的源语言:', data[2]);
+    }
+    
+    // Google 翻译返回的格式：[[["翻译结果", "原文", null, null, 10]], null, "en", ...]
+    // data[0]: 翻译片段数组
+    // data[2]: 检测到的源语言
+    if (data && data[0]) {
+      // 提取所有翻译片段
+      const translations = data[0]
+        .map(item => {
+          if (Array.isArray(item) && item.length > 0) {
+            // item[0] 是翻译文本，item[1] 是原文
+            return item[0];
+          }
+          return null;
+        })
+        .filter(Boolean);  // 过滤掉 null、undefined 和空字符串
+      
+      if (translations.length > 0) {
+        const result = translations.join('').trim();
+        
+        // 检查翻译结果是否为空
+        if (!result) {
+          console.warn('[WordGet Background] 翻译结果为空，返回原文');
+          return originalText;
+        }
+        
+        // 检查翻译结果是否与原文完全相同
+        if (result === originalText) {
+          // 检测到的源语言
+          const detectedLang = data[2];
+          
+          if (typeof window !== 'undefined' && window.wordgetDebug) {
+            console.log('[WordGet Background] 翻译结果与原文相同');
+            console.log('[WordGet Background] 检测语言:', detectedLang, '目标语言:', targetLang);
+          }
+          
+          // 如果是自动检测且结果相同，尝试强制指定为英文
+          if (sourceLang === 'auto' && detectedLang !== 'en') {
+            console.log('[WordGet Background] 尝试强制指定源语言为英文');
+            return await translateText(text, targetLang, 'en');
+          }
+        }
+        
+        if (typeof window !== 'undefined' && window.wordgetDebug) {
+          console.log('[WordGet Background] 翻译成功:', originalText, '->', result);
+        }
+        
+        return result;
+      }
+    }
+    
+    // 如果解析失败，返回原文
+    console.warn('[WordGet Background] 翻译API返回格式异常，返回原文');
+    return originalText;
   } catch (error) {
-    console.error('翻译错误:', error);
-    return text;
+    console.error('[WordGet Background] 翻译错误:', error);
+    return originalText;
   }
 }
 

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WordGet 翻译测试页面</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      line-height: 1.6;
+      padding: 40px;
+      max-width: 1000px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    h1 {
+      color: #2d3748;
+      margin-bottom: 10px;
+      font-size: 32px;
+    }
+
+    .subtitle {
+      color: #718096;
+      margin-bottom: 30px;
+      font-size: 16px;
+    }
+
+    .section {
+      margin-bottom: 40px;
+      padding: 25px;
+      background: #f7fafc;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+
+    .section h2 {
+      color: #2d3748;
+      margin-bottom: 15px;
+      font-size: 20px;
+    }
+
+    .test-case {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .test-case:last-child {
+      margin-bottom: 0;
+    }
+
+    .test-label {
+      font-weight: 600;
+      color: #4a5568;
+      margin-bottom: 8px;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .test-text {
+      padding: 12px;
+      background: #edf2f7;
+      border-radius: 4px;
+      font-size: 16px;
+      color: #2d3748;
+      cursor: text;
+      user-select: text;
+      transition: all 0.2s;
+    }
+
+    .test-text:hover {
+      background: #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .test-text.selected {
+      background: #bee3f8;
+      box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.3);
+    }
+
+    .expected {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: #f0fff4;
+      border-left: 3px solid #48bb78;
+      font-size: 14px;
+      color: #276749;
+      border-radius: 4px;
+    }
+
+    .expected strong {
+      color: #22543d;
+    }
+
+    .instructions {
+      background: #fffaf0;
+      border: 2px solid #fbd38d;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+
+    .instructions h3 {
+      color: #744210;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .instructions ol {
+      margin-left: 20px;
+      color: #744210;
+    }
+
+    .instructions li {
+      margin-bottom: 8px;
+    }
+
+    .instructions code {
+      background: #fed7aa;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+    }
+
+    .debug-info {
+      background: #ebf8ff;
+      border: 2px solid #90cdf4;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 30px;
+    }
+
+    .debug-info h3 {
+      color: #2c5282;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+
+    .debug-info p {
+      color: #2c5282;
+      margin-bottom: 8px;
+    }
+
+    .debug-info code {
+      background: #bee3f8;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #1a365d;
+    }
+
+    .issue-badge {
+      display: inline-block;
+      background: #fc8181;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+
+    .version-badge {
+      display: inline-block;
+      background: #48bb78;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>WordGet 翻译功能测试</h1>
+    <p class="subtitle">
+      测试翻译API的语言检测和结果验证功能
+      <span class="version-badge">v2.2 修复版</span>
+    </p>
+
+    <div class="instructions">
+      <h3>📋 测试说明</h3>
+      <ol>
+        <li>选中下面的测试文本，触发 WordGet 的翻译功能</li>
+        <li>查看翻译结果是否符合预期（应该翻译成中文）</li>
+        <li>如果翻译返回英文，说明仍有问题</li>
+        <li>打开浏览器控制台查看详细日志（开启 <code>window.wordgetDebug = true</code>）</li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>🔤 测试用例 1: 常规英文单词</h2>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">hello</div>
+        <div class="expected"><strong>预期翻译：</strong>你好</div>
+      </div>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">world</div>
+        <div class="expected"><strong>预期翻译：</strong>世界</div>
+      </div>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">beautiful</div>
+        <div class="expected"><strong>预期翻译：</strong>美丽的</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>📝 测试用例 2: 英文短语</h2>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">good morning</div>
+        <div class="expected"><strong>预期翻译：</strong>早上好</div>
+      </div>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">thank you</div>
+        <div class="expected"><strong>预期翻译：</strong>谢谢你</div>
+      </div>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">machine learning</div>
+        <div class="expected"><strong>预期翻译：</strong>机器学习</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>📖 测试用例 3: 英文句子</h2>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">This is a test sentence.</div>
+        <div class="expected"><strong>预期翻译：</strong>这是一个测试句子。</div>
+      </div>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">The quick brown fox jumps over the lazy dog.</div>
+        <div class="expected"><strong>预期翻译：</strong>敏捷的棕色狐狸跳过了懒狗。</div>
+      </div>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">I love programming and building useful tools.</div>
+        <div class="expected"><strong>预期翻译：</strong>我喜欢编程和构建有用的工具。</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>🔧 测试用例 4: 专有名词<span class="issue-badge">容易出问题</span></h2>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">GitHub</div>
+        <div class="expected"><strong>预期翻译：</strong>GitHub（保持原文或合理翻译）</div>
+      </div>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">JavaScript</div>
+        <div class="expected"><strong>预期翻译：</strong>JavaScript（保持原文）</div>
+      </div>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">Visual Studio Code</div>
+        <div class="expected"><strong>预期翻译：</strong>Visual Studio Code（保持原文或合理翻译）</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>🌐 测试用例 5: 混合文本<span class="issue-badge">容易出问题</span></h2>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">hello world</div>
+        <div class="expected"><strong>预期翻译：</strong>你好世界</div>
+      </div>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">I use GitHub every day</div>
+        <div class="expected"><strong>预期翻译：</strong>我每天都使用 GitHub</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>❌ 测试用例 6: 已经是中文（应该保持中文或返回原文）</h2>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">你好世界</div>
+        <div class="expected"><strong>预期翻译：</strong>你好世界（保持原文）</div>
+      </div>
+      <div class="test-case">
+        <div class="test-label">测试文本 - 选中我进行翻译</div>
+        <div class="test-text">这是一个测试</div>
+        <div class="expected"><strong>预期翻译：</strong>这是一个测试（保持原文）</div>
+      </div>
+    </div>
+
+    <div class="debug-info">
+      <h3>🐛 调试信息</h3>
+      <p>如果发现翻译结果不正确（返回英文而不是中文），请执行以下操作：</p>
+      <ol>
+        <li>打开浏览器开发者工具（F12）</li>
+        <li>在控制台输入：<code>window.wordgetDebug = true</code></li>
+        <li>重新选中文本进行翻译</li>
+        <li>查看控制台输出的详细日志：
+          <ul>
+            <li><code>[WordGet Translator] 原文</code> - 原始文本</li>
+            <li><code>[WordGet Translator] API响应</code> - Google 翻译 API 返回的完整数据</li>
+            <li><code>[WordGet Translator] 检测到的源语言</code> - 语言检测结果</li>
+            <li><code>[WordGet Translator] 翻译成功</code> - 最终翻译结果</li>
+          </ul>
+        </li>
+        <li>如果看到 <code>翻译结果与原文相同</code>，说明语言检测有问题</li>
+        <li>修复后的版本会自动尝试强制指定源语言为英文</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    // 添加选中效果
+    document.querySelectorAll('.test-text').forEach(element => {
+      element.addEventListener('mouseup', function() {
+        const selection = window.getSelection();
+        if (selection.toString().trim()) {
+          // 移除所有其他的选中效果
+          document.querySelectorAll('.test-text.selected').forEach(el => {
+            el.classList.remove('selected');
+          });
+          // 添加选中效果
+          this.classList.add('selected');
+          
+          // 1秒后移除效果
+          setTimeout(() => {
+            this.classList.remove('selected');
+          }, 1000);
+        }
+      });
+    });
+
+    // 提示用户开启调试模式
+    console.log('%c[WordGet 测试页面] 提示：执行 window.wordgetDebug = true 可以开启详细日志', 'background: #667eea; color: white; padding: 5px 10px; border-radius: 3px; font-weight: bold;');
+  </script>
+</body>
+</html>

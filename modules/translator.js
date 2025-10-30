@@ -16,6 +16,8 @@ export const Translator = {
       return '';
     }
 
+    const originalText = text.trim();
+
     try {
       // 使用 Google 翻译的非官方 API
       // 注意：生产环境建议使用官方 API 和 API 密钥
@@ -40,14 +42,67 @@ export const Translator = {
       
       const data = await response.json();
       
-      if (data && data[0]) {
-        // Google 翻译返回的格式：[[["翻译结果", "原文", null, null, 10]], ...]
-        return data[0].map(item => item[0]).filter(Boolean).join('');
+      // 调试日志
+      if (window.wordgetDebug) {
+        console.log('[WordGet Translator] 原文:', originalText);
+        console.log('[WordGet Translator] API响应:', data);
+        console.log('[WordGet Translator] 检测到的源语言:', data[2]);
       }
       
-      return text;
+      // Google 翻译返回的格式：[[["翻译结果", "原文", null, null, 10]], null, "en", ...]
+      // data[0]: 翻译片段数组
+      // data[2]: 检测到的源语言
+      if (data && data[0]) {
+        // 提取所有翻译片段
+        const translations = data[0]
+          .map(item => {
+            if (Array.isArray(item) && item.length > 0) {
+              // item[0] 是翻译文本，item[1] 是原文
+              return item[0];
+            }
+            return null;
+          })
+          .filter(Boolean);  // 过滤掉 null、undefined 和空字符串
+        
+        if (translations.length > 0) {
+          const result = translations.join('').trim();
+          
+          // 检查翻译结果是否为空
+          if (!result) {
+            console.warn('[WordGet Translator] 翻译结果为空，返回原文');
+            return originalText;
+          }
+          
+          // 检查翻译结果是否与原文完全相同
+          if (result === originalText) {
+            // 检测到的源语言
+            const detectedLang = data[2];
+            
+            if (window.wordgetDebug) {
+              console.log('[WordGet Translator] 翻译结果与原文相同');
+              console.log('[WordGet Translator] 检测语言:', detectedLang, '目标语言:', targetLang);
+            }
+            
+            // 如果是自动检测且结果相同，尝试强制指定为英文
+            if (sourceLang === 'auto' && detectedLang !== 'en') {
+              console.log('[WordGet Translator] 尝试强制指定源语言为英文');
+              return await this.translate(text, targetLang, 'en');
+            }
+          }
+          
+          if (window.wordgetDebug) {
+            console.log('[WordGet Translator] 翻译成功:', originalText, '->', result);
+          }
+          
+          return result;
+        }
+      }
+      
+      // 如果解析失败，返回原文
+      console.warn('[WordGet Translator] 翻译API返回格式异常，返回原文');
+      return originalText;
     } catch (error) {
-      console.error('翻译错误:', error);
+      console.error('[WordGet Translator] 翻译错误:', error);
       
       // 如果是超时错误，返回更友好的提示
       if (error.name === 'AbortError') {
